@@ -26,6 +26,10 @@ app.use(
   }),
 );
 app.use(cors());
+
+// Raw body needed for Svix webhook signature verification — must come before json()
+app.use("/api/webhooks/clerk", express.raw({ type: "application/json" }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

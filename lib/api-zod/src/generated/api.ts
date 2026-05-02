@@ -8,9 +8,682 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
+});
+
+/**
+ * @summary Clerk webhook handler
+ */
+export const ClerkWebhookBody = zod.object({}).passthrough();
+
+export const ClerkWebhookResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary Get current user
+ */
+export const GetMeResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  email: zod.string(),
+  image: zod.string(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Get tasks assigned to the current user
+ */
+export const GetMyTasksResponseItem = zod
+  .object({
+    id: zod.string(),
+    projectId: zod.string(),
+    title: zod.string(),
+    description: zod.string().nullish(),
+    status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]),
+    type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]),
+    priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+    assigneeId: zod.string(),
+    dueDate: zod.coerce.date(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+    assignee: zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      email: zod.string(),
+      image: zod.string(),
+      createdAt: zod.coerce.date(),
+      updatedAt: zod.coerce.date(),
+    }),
+    comments: zod.array(
+      zod.object({
+        id: zod.string(),
+        content: zod.string(),
+        userId: zod.string(),
+        taskId: zod.string(),
+        createdAt: zod.coerce.date(),
+        user: zod.object({
+          id: zod.string(),
+          name: zod.string(),
+          email: zod.string(),
+          image: zod.string(),
+          createdAt: zod.coerce.date(),
+          updatedAt: zod.coerce.date(),
+        }),
+      }),
+    ),
+  })
+  .and(
+    zod.object({
+      project: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        description: zod.string().nullish(),
+        priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+        status: zod.enum([
+          "ACTIVE",
+          "PLANNING",
+          "COMPLETED",
+          "ON_HOLD",
+          "CANCELLED",
+        ]),
+        startDate: zod.coerce.date().nullish(),
+        endDate: zod.coerce.date().nullish(),
+        teamLead: zod.string(),
+        workspaceId: zod.string(),
+        progress: zod.number(),
+        createdAt: zod.coerce.date(),
+        updatedAt: zod.coerce.date(),
+        members: zod.array(
+          zod.object({
+            id: zod.string(),
+            userId: zod.string(),
+            projectId: zod.string(),
+            user: zod.object({
+              id: zod.string(),
+              name: zod.string(),
+              email: zod.string(),
+              image: zod.string(),
+              createdAt: zod.coerce.date(),
+              updatedAt: zod.coerce.date(),
+            }),
+            createdAt: zod.coerce.date(),
+          }),
+        ),
+      }),
+    }),
+  );
+export const GetMyTasksResponse = zod.array(GetMyTasksResponseItem);
+
+/**
+ * @summary List workspaces for the current user
+ */
+export const ListWorkspacesResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  slug: zod.string(),
+  description: zod.string().nullish(),
+  ownerId: zod.string(),
+  imageUrl: zod.string(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+});
+export const ListWorkspacesResponse = zod.array(ListWorkspacesResponseItem);
+
+/**
+ * @summary Get workspace with members
+ */
+export const GetWorkspaceParams = zod.object({
+  workspaceId: zod.coerce.string(),
+});
+
+export const GetWorkspaceResponse = zod
+  .object({
+    id: zod.string(),
+    name: zod.string(),
+    slug: zod.string(),
+    description: zod.string().nullish(),
+    ownerId: zod.string(),
+    imageUrl: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      members: zod.array(
+        zod.object({
+          id: zod.string(),
+          userId: zod.string(),
+          workspaceId: zod.string(),
+          role: zod.enum(["ADMIN", "MEMBER"]),
+          message: zod.string(),
+          user: zod.object({
+            id: zod.string(),
+            name: zod.string(),
+            email: zod.string(),
+            image: zod.string(),
+            createdAt: zod.coerce.date(),
+            updatedAt: zod.coerce.date(),
+          }),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+    }),
+  );
+
+/**
+ * @summary List members of a workspace
+ */
+export const ListWorkspaceMembersParams = zod.object({
+  workspaceId: zod.coerce.string(),
+});
+
+export const ListWorkspaceMembersResponseItem = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  workspaceId: zod.string(),
+  role: zod.enum(["ADMIN", "MEMBER"]),
+  message: zod.string(),
+  user: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    email: zod.string(),
+    image: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  createdAt: zod.coerce.date(),
+});
+export const ListWorkspaceMembersResponse = zod.array(
+  ListWorkspaceMembersResponseItem,
+);
+
+/**
+ * @summary List projects in a workspace
+ */
+export const ListProjectsParams = zod.object({
+  workspaceId: zod.coerce.string(),
+});
+
+export const ListProjectsResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+  status: zod.enum(["ACTIVE", "PLANNING", "COMPLETED", "ON_HOLD", "CANCELLED"]),
+  startDate: zod.coerce.date().nullish(),
+  endDate: zod.coerce.date().nullish(),
+  teamLead: zod.string(),
+  workspaceId: zod.string(),
+  progress: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      userId: zod.string(),
+      projectId: zod.string(),
+      user: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        email: zod.string(),
+        image: zod.string(),
+        createdAt: zod.coerce.date(),
+        updatedAt: zod.coerce.date(),
+      }),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+});
+export const ListProjectsResponse = zod.array(ListProjectsResponseItem);
+
+/**
+ * @summary Create a new project
+ */
+export const CreateProjectParams = zod.object({
+  workspaceId: zod.coerce.string(),
+});
+
+export const CreateProjectBody = zod.object({
+  name: zod.string(),
+  description: zod.string().optional(),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  status: zod
+    .enum(["ACTIVE", "PLANNING", "COMPLETED", "ON_HOLD", "CANCELLED"])
+    .optional(),
+  startDate: zod.coerce.date().optional(),
+  endDate: zod.coerce.date().optional(),
+});
+
+/**
+ * @summary Get project with tasks and members
+ */
+export const GetProjectParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const GetProjectResponse = zod
+  .object({
+    id: zod.string(),
+    name: zod.string(),
+    description: zod.string().nullish(),
+    priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+    status: zod.enum([
+      "ACTIVE",
+      "PLANNING",
+      "COMPLETED",
+      "ON_HOLD",
+      "CANCELLED",
+    ]),
+    startDate: zod.coerce.date().nullish(),
+    endDate: zod.coerce.date().nullish(),
+    teamLead: zod.string(),
+    workspaceId: zod.string(),
+    progress: zod.number(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+    members: zod.array(
+      zod.object({
+        id: zod.string(),
+        userId: zod.string(),
+        projectId: zod.string(),
+        user: zod.object({
+          id: zod.string(),
+          name: zod.string(),
+          email: zod.string(),
+          image: zod.string(),
+          createdAt: zod.coerce.date(),
+          updatedAt: zod.coerce.date(),
+        }),
+        createdAt: zod.coerce.date(),
+      }),
+    ),
+  })
+  .and(
+    zod.object({
+      tasks: zod.array(
+        zod.object({
+          id: zod.string(),
+          projectId: zod.string(),
+          title: zod.string(),
+          description: zod.string().nullish(),
+          status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]),
+          type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]),
+          priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+          assigneeId: zod.string(),
+          dueDate: zod.coerce.date(),
+          createdAt: zod.coerce.date(),
+          updatedAt: zod.coerce.date(),
+          assignee: zod.object({
+            id: zod.string(),
+            name: zod.string(),
+            email: zod.string(),
+            image: zod.string(),
+            createdAt: zod.coerce.date(),
+            updatedAt: zod.coerce.date(),
+          }),
+          comments: zod.array(
+            zod.object({
+              id: zod.string(),
+              content: zod.string(),
+              userId: zod.string(),
+              taskId: zod.string(),
+              createdAt: zod.coerce.date(),
+              user: zod.object({
+                id: zod.string(),
+                name: zod.string(),
+                email: zod.string(),
+                image: zod.string(),
+                createdAt: zod.coerce.date(),
+                updatedAt: zod.coerce.date(),
+              }),
+            }),
+          ),
+        }),
+      ),
+    }),
+  );
+
+/**
+ * @summary Update a project (team_lead or ADMIN only)
+ */
+export const UpdateProjectParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const updateProjectBodyProgressMin = 0;
+export const updateProjectBodyProgressMax = 100;
+
+export const UpdateProjectBody = zod.object({
+  name: zod.string().optional(),
+  description: zod.string().optional(),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  status: zod
+    .enum(["ACTIVE", "PLANNING", "COMPLETED", "ON_HOLD", "CANCELLED"])
+    .optional(),
+  startDate: zod.coerce.date().optional(),
+  endDate: zod.coerce.date().optional(),
+  teamLead: zod.string().optional(),
+  progress: zod
+    .number()
+    .min(updateProjectBodyProgressMin)
+    .max(updateProjectBodyProgressMax)
+    .optional(),
+});
+
+export const UpdateProjectResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  description: zod.string().nullish(),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+  status: zod.enum(["ACTIVE", "PLANNING", "COMPLETED", "ON_HOLD", "CANCELLED"]),
+  startDate: zod.coerce.date().nullish(),
+  endDate: zod.coerce.date().nullish(),
+  teamLead: zod.string(),
+  workspaceId: zod.string(),
+  progress: zod.number(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  members: zod.array(
+    zod.object({
+      id: zod.string(),
+      userId: zod.string(),
+      projectId: zod.string(),
+      user: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        email: zod.string(),
+        image: zod.string(),
+        createdAt: zod.coerce.date(),
+        updatedAt: zod.coerce.date(),
+      }),
+      createdAt: zod.coerce.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Delete a project (team_lead or ADMIN only)
+ */
+export const DeleteProjectParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const DeleteProjectResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary List project members
+ */
+export const ListProjectMembersParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const ListProjectMembersResponseItem = zod.object({
+  id: zod.string(),
+  userId: zod.string(),
+  projectId: zod.string(),
+  user: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    email: zod.string(),
+    image: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  createdAt: zod.coerce.date(),
+});
+export const ListProjectMembersResponse = zod.array(
+  ListProjectMembersResponseItem,
+);
+
+/**
+ * @summary Add a member to a project (team_lead or ADMIN only)
+ */
+export const AddProjectMemberParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const AddProjectMemberBody = zod.object({
+  userId: zod.string(),
+});
+
+/**
+ * @summary Remove a member from a project (team_lead or ADMIN only)
+ */
+export const RemoveProjectMemberParams = zod.object({
+  projectId: zod.coerce.string(),
+  userId: zod.coerce.string(),
+});
+
+export const RemoveProjectMemberResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary List tasks in a project
+ */
+export const ListTasksParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const ListTasksResponseItem = zod.object({
+  id: zod.string(),
+  projectId: zod.string(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]),
+  type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+  assigneeId: zod.string(),
+  dueDate: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  assignee: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    email: zod.string(),
+    image: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  comments: zod.array(
+    zod.object({
+      id: zod.string(),
+      content: zod.string(),
+      userId: zod.string(),
+      taskId: zod.string(),
+      createdAt: zod.coerce.date(),
+      user: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        email: zod.string(),
+        image: zod.string(),
+        createdAt: zod.coerce.date(),
+        updatedAt: zod.coerce.date(),
+      }),
+    }),
+  ),
+});
+export const ListTasksResponse = zod.array(ListTasksResponseItem);
+
+/**
+ * @summary Create a task (any workspace member)
+ */
+export const CreateTaskParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const CreateTaskBody = zod.object({
+  title: zod.string(),
+  description: zod.string().optional(),
+  status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
+  type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]).optional(),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  assigneeId: zod.string(),
+  dueDate: zod.coerce.date(),
+});
+
+/**
+ * @summary Get a task with comments
+ */
+export const GetTaskParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const GetTaskResponse = zod.object({
+  id: zod.string(),
+  projectId: zod.string(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]),
+  type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+  assigneeId: zod.string(),
+  dueDate: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  assignee: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    email: zod.string(),
+    image: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  comments: zod.array(
+    zod.object({
+      id: zod.string(),
+      content: zod.string(),
+      userId: zod.string(),
+      taskId: zod.string(),
+      createdAt: zod.coerce.date(),
+      user: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        email: zod.string(),
+        image: zod.string(),
+        createdAt: zod.coerce.date(),
+        updatedAt: zod.coerce.date(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Update a task (assignee, team_lead, or ADMIN)
+ */
+export const UpdateTaskParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const UpdateTaskBody = zod.object({
+  title: zod.string().optional(),
+  description: zod.string().optional(),
+  status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
+  type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]).optional(),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  assigneeId: zod.string().optional(),
+  dueDate: zod.coerce.date().optional(),
+});
+
+export const UpdateTaskResponse = zod.object({
+  id: zod.string(),
+  projectId: zod.string(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  status: zod.enum(["TODO", "IN_PROGRESS", "DONE"]),
+  type: zod.enum(["TASK", "BUG", "FEATURE", "IMPROVEMENT", "OTHER"]),
+  priority: zod.enum(["LOW", "MEDIUM", "HIGH"]),
+  assigneeId: zod.string(),
+  dueDate: zod.coerce.date(),
+  createdAt: zod.coerce.date(),
+  updatedAt: zod.coerce.date(),
+  assignee: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    email: zod.string(),
+    image: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+  comments: zod.array(
+    zod.object({
+      id: zod.string(),
+      content: zod.string(),
+      userId: zod.string(),
+      taskId: zod.string(),
+      createdAt: zod.coerce.date(),
+      user: zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        email: zod.string(),
+        image: zod.string(),
+        createdAt: zod.coerce.date(),
+        updatedAt: zod.coerce.date(),
+      }),
+    }),
+  ),
+});
+
+/**
+ * @summary Delete a task (assignee, team_lead, or ADMIN)
+ */
+export const DeleteTaskParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const DeleteTaskResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
+ * @summary List comments on a task
+ */
+export const ListCommentsParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const ListCommentsResponseItem = zod.object({
+  id: zod.string(),
+  content: zod.string(),
+  userId: zod.string(),
+  taskId: zod.string(),
+  createdAt: zod.coerce.date(),
+  user: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    email: zod.string(),
+    image: zod.string(),
+    createdAt: zod.coerce.date(),
+    updatedAt: zod.coerce.date(),
+  }),
+});
+export const ListCommentsResponse = zod.array(ListCommentsResponseItem);
+
+/**
+ * @summary Add a comment to a task (any workspace member)
+ */
+export const CreateCommentParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const CreateCommentBody = zod.object({
+  content: zod.string(),
+});
+
+/**
+ * @summary Delete a comment (author or ADMIN)
+ */
+export const DeleteCommentParams = zod.object({
+  commentId: zod.coerce.string(),
+});
+
+export const DeleteCommentResponse = zod.object({
+  message: zod.string(),
 });

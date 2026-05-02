@@ -1,9 +1,11 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Show } from "@clerk/react";
+import { useAuth } from "@clerk/react";
 import { Toaster } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import { loadTheme } from "./features/themeSlice";
+import { fetchWorkspaces } from "./features/workspaceSlice";
+import { setTokenGetter } from "./lib/api";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
@@ -15,6 +17,38 @@ import SignUpPage from "./pages/SignUpPage";
 import LandingPage from "./pages/LandingPage";
 import AccountPage from "./pages/AccountPage";
 
+function AuthBridge() {
+    const { getToken, isSignedIn, isLoaded } = useAuth();
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        setTokenGetter(getToken);
+        return () => setTokenGetter(null);
+    }, [getToken]);
+
+    useEffect(() => {
+        if (isLoaded && isSignedIn) {
+            dispatch(fetchWorkspaces());
+        }
+    }, [isLoaded, isSignedIn, dispatch]);
+
+    return null;
+}
+
+function RequireAuth({ children }) {
+    const { isSignedIn, isLoaded } = useAuth();
+    if (!isLoaded) return null;
+    if (!isSignedIn) return <Navigate to="/sign-in" replace />;
+    return children;
+}
+
+function RedirectIfSignedIn({ children }) {
+    const { isSignedIn, isLoaded } = useAuth();
+    if (!isLoaded) return null;
+    if (isSignedIn) return <Navigate to="/dashboard" replace />;
+    return children;
+}
+
 const App = () => {
     const dispatch = useDispatch();
 
@@ -25,37 +59,25 @@ const App = () => {
     return (
         <>
             <Toaster />
+            <AuthBridge />
             <Routes>
-                {/* Public landing page */}
                 <Route
                     path="/"
                     element={
-                        <>
-                            <Show when="signed-in">
-                                <Navigate to="/dashboard" replace />
-                            </Show>
-                            <Show when="signed-out">
-                                <LandingPage />
-                            </Show>
-                        </>
+                        <RedirectIfSignedIn>
+                            <LandingPage />
+                        </RedirectIfSignedIn>
                     }
                 />
 
-                {/* Auth routes */}
                 <Route path="/sign-in/*" element={<SignInPage />} />
                 <Route path="/sign-up/*" element={<SignUpPage />} />
 
-                {/* Protected app routes */}
                 <Route
                     element={
-                        <>
-                            <Show when="signed-in">
-                                <Layout />
-                            </Show>
-                            <Show when="signed-out">
-                                <Navigate to="/sign-in" replace />
-                            </Show>
-                        </>
+                        <RequireAuth>
+                            <Layout />
+                        </RequireAuth>
                     }
                 >
                     <Route path="dashboard" element={<Dashboard />} />

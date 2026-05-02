@@ -8,3 +8,326 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface MessageResponse {
+  message: string;
+}
+
+export interface ErrorResponse {
+  error: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  ownerId: string;
+  imageUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type WorkspaceMemberRole =
+  (typeof WorkspaceMemberRole)[keyof typeof WorkspaceMemberRole];
+
+export const WorkspaceMemberRole = {
+  ADMIN: "ADMIN",
+  MEMBER: "MEMBER",
+} as const;
+
+export interface WorkspaceMember {
+  id: string;
+  userId: string;
+  workspaceId: string;
+  role: WorkspaceMemberRole;
+  message: string;
+  user: User;
+  createdAt: string;
+}
+
+export type WorkspaceWithMembers = Workspace & {
+  members: WorkspaceMember[];
+};
+
+export type ProjectSummaryPriority =
+  (typeof ProjectSummaryPriority)[keyof typeof ProjectSummaryPriority];
+
+export const ProjectSummaryPriority = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export type ProjectSummaryStatus =
+  (typeof ProjectSummaryStatus)[keyof typeof ProjectSummaryStatus];
+
+export const ProjectSummaryStatus = {
+  ACTIVE: "ACTIVE",
+  PLANNING: "PLANNING",
+  COMPLETED: "COMPLETED",
+  ON_HOLD: "ON_HOLD",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export interface ProjectMember {
+  id: string;
+  userId: string;
+  projectId: string;
+  user: User;
+  createdAt: string;
+}
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  description?: string | null;
+  priority: ProjectSummaryPriority;
+  status: ProjectSummaryStatus;
+  startDate?: string | null;
+  endDate?: string | null;
+  teamLead: string;
+  workspaceId: string;
+  progress: number;
+  createdAt: string;
+  updatedAt: string;
+  members: ProjectMember[];
+}
+
+export type TaskDetailStatus =
+  (typeof TaskDetailStatus)[keyof typeof TaskDetailStatus];
+
+export const TaskDetailStatus = {
+  TODO: "TODO",
+  IN_PROGRESS: "IN_PROGRESS",
+  DONE: "DONE",
+} as const;
+
+export type TaskDetailType =
+  (typeof TaskDetailType)[keyof typeof TaskDetailType];
+
+export const TaskDetailType = {
+  TASK: "TASK",
+  BUG: "BUG",
+  FEATURE: "FEATURE",
+  IMPROVEMENT: "IMPROVEMENT",
+  OTHER: "OTHER",
+} as const;
+
+export type TaskDetailPriority =
+  (typeof TaskDetailPriority)[keyof typeof TaskDetailPriority];
+
+export const TaskDetailPriority = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export interface CommentDetail {
+  id: string;
+  content: string;
+  userId: string;
+  taskId: string;
+  createdAt: string;
+  user: User;
+}
+
+export interface TaskDetail {
+  id: string;
+  projectId: string;
+  title: string;
+  description?: string | null;
+  status: TaskDetailStatus;
+  type: TaskDetailType;
+  priority: TaskDetailPriority;
+  assigneeId: string;
+  dueDate: string;
+  createdAt: string;
+  updatedAt: string;
+  assignee: User;
+  comments: CommentDetail[];
+}
+
+export type ProjectDetail = ProjectSummary & {
+  tasks: TaskDetail[];
+};
+
+export type TaskWithProject = TaskDetail & {
+  project: ProjectSummary;
+};
+
+export type CreateProjectBodyPriority =
+  (typeof CreateProjectBodyPriority)[keyof typeof CreateProjectBodyPriority];
+
+export const CreateProjectBodyPriority = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export type CreateProjectBodyStatus =
+  (typeof CreateProjectBodyStatus)[keyof typeof CreateProjectBodyStatus];
+
+export const CreateProjectBodyStatus = {
+  ACTIVE: "ACTIVE",
+  PLANNING: "PLANNING",
+  COMPLETED: "COMPLETED",
+  ON_HOLD: "ON_HOLD",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export interface CreateProjectBody {
+  name: string;
+  description?: string;
+  priority?: CreateProjectBodyPriority;
+  status?: CreateProjectBodyStatus;
+  startDate?: string;
+  endDate?: string;
+}
+
+export type UpdateProjectBodyPriority =
+  (typeof UpdateProjectBodyPriority)[keyof typeof UpdateProjectBodyPriority];
+
+export const UpdateProjectBodyPriority = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export type UpdateProjectBodyStatus =
+  (typeof UpdateProjectBodyStatus)[keyof typeof UpdateProjectBodyStatus];
+
+export const UpdateProjectBodyStatus = {
+  ACTIVE: "ACTIVE",
+  PLANNING: "PLANNING",
+  COMPLETED: "COMPLETED",
+  ON_HOLD: "ON_HOLD",
+  CANCELLED: "CANCELLED",
+} as const;
+
+export interface UpdateProjectBody {
+  name?: string;
+  description?: string;
+  priority?: UpdateProjectBodyPriority;
+  status?: UpdateProjectBodyStatus;
+  startDate?: string;
+  endDate?: string;
+  teamLead?: string;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  progress?: number;
+}
+
+export type CreateTaskBodyStatus =
+  (typeof CreateTaskBodyStatus)[keyof typeof CreateTaskBodyStatus];
+
+export const CreateTaskBodyStatus = {
+  TODO: "TODO",
+  IN_PROGRESS: "IN_PROGRESS",
+  DONE: "DONE",
+} as const;
+
+export type CreateTaskBodyType =
+  (typeof CreateTaskBodyType)[keyof typeof CreateTaskBodyType];
+
+export const CreateTaskBodyType = {
+  TASK: "TASK",
+  BUG: "BUG",
+  FEATURE: "FEATURE",
+  IMPROVEMENT: "IMPROVEMENT",
+  OTHER: "OTHER",
+} as const;
+
+export type CreateTaskBodyPriority =
+  (typeof CreateTaskBodyPriority)[keyof typeof CreateTaskBodyPriority];
+
+export const CreateTaskBodyPriority = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export interface CreateTaskBody {
+  title: string;
+  description?: string;
+  status?: CreateTaskBodyStatus;
+  type?: CreateTaskBodyType;
+  priority?: CreateTaskBodyPriority;
+  assigneeId: string;
+  dueDate: string;
+}
+
+export type UpdateTaskBodyStatus =
+  (typeof UpdateTaskBodyStatus)[keyof typeof UpdateTaskBodyStatus];
+
+export const UpdateTaskBodyStatus = {
+  TODO: "TODO",
+  IN_PROGRESS: "IN_PROGRESS",
+  DONE: "DONE",
+} as const;
+
+export type UpdateTaskBodyType =
+  (typeof UpdateTaskBodyType)[keyof typeof UpdateTaskBodyType];
+
+export const UpdateTaskBodyType = {
+  TASK: "TASK",
+  BUG: "BUG",
+  FEATURE: "FEATURE",
+  IMPROVEMENT: "IMPROVEMENT",
+  OTHER: "OTHER",
+} as const;
+
+export type UpdateTaskBodyPriority =
+  (typeof UpdateTaskBodyPriority)[keyof typeof UpdateTaskBodyPriority];
+
+export const UpdateTaskBodyPriority = {
+  LOW: "LOW",
+  MEDIUM: "MEDIUM",
+  HIGH: "HIGH",
+} as const;
+
+export interface UpdateTaskBody {
+  title?: string;
+  description?: string;
+  status?: UpdateTaskBodyStatus;
+  type?: UpdateTaskBodyType;
+  priority?: UpdateTaskBodyPriority;
+  assigneeId?: string;
+  dueDate?: string;
+}
+
+export interface AddProjectMemberBody {
+  userId: string;
+}
+
+export interface CreateCommentBody {
+  content: string;
+}
+
+/**
+ * Unauthorized
+ */
+export type UnauthorizedResponse = ErrorResponse;
+
+/**
+ * Forbidden
+ */
+export type ForbiddenResponse = ErrorResponse;
+
+/**
+ * Not found
+ */
+export type NotFoundResponse = ErrorResponse;
+
+export type ClerkWebhookBody = { [key: string]: unknown };

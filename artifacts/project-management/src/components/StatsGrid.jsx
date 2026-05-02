@@ -62,15 +62,12 @@ export default function StatsGrid() {
                     .reduce((acc, project) => acc + project.tasks.length, 0),
                 myTasks: currentWorkspace.projects.reduce(
                     (acc, project) =>
-                        acc +
-                        project.tasks.filter(
-                            (t) => t.assignee?.email === currentWorkspace.owner.email
-                        ).length,
+                        acc + project.tasks.filter((t) => t.status !== "DONE").length,
                     0
                 ),
                 overdueIssues: currentWorkspace.projects.reduce(
                     (acc, project) =>
-                        acc + project.tasks.filter((t) => t.due_date < new Date()).length,
+                        acc + project.tasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "DONE").length,
                     0
                 ),
             });

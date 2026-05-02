@@ -5,18 +5,44 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  AddProjectMemberBody,
+  ClerkWebhookBody,
+  CommentDetail,
+  CreateCommentBody,
+  CreateProjectBody,
+  CreateTaskBody,
+  ForbiddenResponse,
+  HealthStatus,
+  MessageResponse,
+  NotFoundResponse,
+  ProjectDetail,
+  ProjectMember,
+  ProjectSummary,
+  TaskDetail,
+  TaskWithProject,
+  UnauthorizedResponse,
+  UpdateProjectBody,
+  UpdateTaskBody,
+  User,
+  Workspace,
+  WorkspaceMember,
+  WorkspaceWithMembers,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
-import type { ErrorType } from "../custom-fetch";
+import type { ErrorType, BodyType } from "../custom-fetch";
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -25,7 +51,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -99,3 +124,1935 @@ export function useHealthCheck<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Clerk webhook handler
+ */
+export const getClerkWebhookUrl = () => {
+  return `/api/webhooks/clerk`;
+};
+
+export const clerkWebhook = async (
+  clerkWebhookBody: ClerkWebhookBody,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getClerkWebhookUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(clerkWebhookBody),
+  });
+};
+
+export const getClerkWebhookMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clerkWebhook>>,
+    TError,
+    { data: BodyType<ClerkWebhookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof clerkWebhook>>,
+  TError,
+  { data: BodyType<ClerkWebhookBody> },
+  TContext
+> => {
+  const mutationKey = ["clerkWebhook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof clerkWebhook>>,
+    { data: BodyType<ClerkWebhookBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return clerkWebhook(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClerkWebhookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof clerkWebhook>>
+>;
+export type ClerkWebhookMutationBody = BodyType<ClerkWebhookBody>;
+export type ClerkWebhookMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Clerk webhook handler
+ */
+export const useClerkWebhook = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clerkWebhook>>,
+    TError,
+    { data: BodyType<ClerkWebhookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof clerkWebhook>>,
+  TError,
+  { data: BodyType<ClerkWebhookBody> },
+  TContext
+> => {
+  return useMutation(getClerkWebhookMutationOptions(options));
+};
+
+/**
+ * @summary Get current user
+ */
+export const getGetMeUrl = () => {
+  return `/api/users/me`;
+};
+
+export const getMe = async (options?: RequestInit): Promise<User> => {
+  return customFetch<User>(getGetMeUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMeQueryKey = () => {
+  return [`/api/users/me`] as const;
+};
+
+export const getGetMeQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMeQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMe>>> = ({
+    signal,
+  }) => getMe({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMe>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMeQueryResult = NonNullable<Awaited<ReturnType<typeof getMe>>>;
+export type GetMeQueryError = ErrorType<UnauthorizedResponse>;
+
+/**
+ * @summary Get current user
+ */
+
+export function useGetMe<
+  TData = Awaited<ReturnType<typeof getMe>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getMe>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMeQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get tasks assigned to the current user
+ */
+export const getGetMyTasksUrl = () => {
+  return `/api/users/me/tasks`;
+};
+
+export const getMyTasks = async (
+  options?: RequestInit,
+): Promise<TaskWithProject[]> => {
+  return customFetch<TaskWithProject[]>(getGetMyTasksUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMyTasksQueryKey = () => {
+  return [`/api/users/me/tasks`] as const;
+};
+
+export const getGetMyTasksQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyTasks>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMyTasksQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMyTasks>>> = ({
+    signal,
+  }) => getMyTasks({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMyTasks>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMyTasksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMyTasks>>
+>;
+export type GetMyTasksQueryError = ErrorType<UnauthorizedResponse>;
+
+/**
+ * @summary Get tasks assigned to the current user
+ */
+
+export function useGetMyTasks<
+  TData = Awaited<ReturnType<typeof getMyTasks>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMyTasks>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMyTasksQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List workspaces for the current user
+ */
+export const getListWorkspacesUrl = () => {
+  return `/api/workspaces`;
+};
+
+export const listWorkspaces = async (
+  options?: RequestInit,
+): Promise<Workspace[]> => {
+  return customFetch<Workspace[]>(getListWorkspacesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListWorkspacesQueryKey = () => {
+  return [`/api/workspaces`] as const;
+};
+
+export const getListWorkspacesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWorkspaces>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listWorkspaces>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListWorkspacesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkspaces>>> = ({
+    signal,
+  }) => listWorkspaces({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWorkspaces>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListWorkspacesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWorkspaces>>
+>;
+export type ListWorkspacesQueryError = ErrorType<UnauthorizedResponse>;
+
+/**
+ * @summary List workspaces for the current user
+ */
+
+export function useListWorkspaces<
+  TData = Awaited<ReturnType<typeof listWorkspaces>>,
+  TError = ErrorType<UnauthorizedResponse>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listWorkspaces>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListWorkspacesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get workspace with members
+ */
+export const getGetWorkspaceUrl = (workspaceId: string) => {
+  return `/api/workspaces/${workspaceId}`;
+};
+
+export const getWorkspace = async (
+  workspaceId: string,
+  options?: RequestInit,
+): Promise<WorkspaceWithMembers> => {
+  return customFetch<WorkspaceWithMembers>(getGetWorkspaceUrl(workspaceId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWorkspaceQueryKey = (workspaceId: string) => {
+  return [`/api/workspaces/${workspaceId}`] as const;
+};
+
+export const getGetWorkspaceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWorkspace>>,
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+>(
+  workspaceId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWorkspace>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetWorkspaceQueryKey(workspaceId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkspace>>> = ({
+    signal,
+  }) => getWorkspace(workspaceId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!workspaceId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWorkspace>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWorkspaceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWorkspace>>
+>;
+export type GetWorkspaceQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Get workspace with members
+ */
+
+export function useGetWorkspace<
+  TData = Awaited<ReturnType<typeof getWorkspace>>,
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+>(
+  workspaceId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getWorkspace>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWorkspaceQueryOptions(workspaceId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List members of a workspace
+ */
+export const getListWorkspaceMembersUrl = (workspaceId: string) => {
+  return `/api/workspaces/${workspaceId}/members`;
+};
+
+export const listWorkspaceMembers = async (
+  workspaceId: string,
+  options?: RequestInit,
+): Promise<WorkspaceMember[]> => {
+  return customFetch<WorkspaceMember[]>(
+    getListWorkspaceMembersUrl(workspaceId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListWorkspaceMembersQueryKey = (workspaceId: string) => {
+  return [`/api/workspaces/${workspaceId}/members`] as const;
+};
+
+export const getListWorkspaceMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWorkspaceMembers>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  workspaceId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWorkspaceMembers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListWorkspaceMembersQueryKey(workspaceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listWorkspaceMembers>>
+  > = ({ signal }) =>
+    listWorkspaceMembers(workspaceId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!workspaceId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWorkspaceMembers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListWorkspaceMembersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWorkspaceMembers>>
+>;
+export type ListWorkspaceMembersQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List members of a workspace
+ */
+
+export function useListWorkspaceMembers<
+  TData = Awaited<ReturnType<typeof listWorkspaceMembers>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  workspaceId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWorkspaceMembers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListWorkspaceMembersQueryOptions(
+    workspaceId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List projects in a workspace
+ */
+export const getListProjectsUrl = (workspaceId: string) => {
+  return `/api/workspaces/${workspaceId}/projects`;
+};
+
+export const listProjects = async (
+  workspaceId: string,
+  options?: RequestInit,
+): Promise<ProjectSummary[]> => {
+  return customFetch<ProjectSummary[]>(getListProjectsUrl(workspaceId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProjectsQueryKey = (workspaceId: string) => {
+  return [`/api/workspaces/${workspaceId}/projects`] as const;
+};
+
+export const getListProjectsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProjects>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  workspaceId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProjects>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListProjectsQueryKey(workspaceId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listProjects>>> = ({
+    signal,
+  }) => listProjects(workspaceId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!workspaceId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProjects>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProjectsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProjects>>
+>;
+export type ListProjectsQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List projects in a workspace
+ */
+
+export function useListProjects<
+  TData = Awaited<ReturnType<typeof listProjects>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  workspaceId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProjects>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProjectsQueryOptions(workspaceId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new project
+ */
+export const getCreateProjectUrl = (workspaceId: string) => {
+  return `/api/workspaces/${workspaceId}/projects`;
+};
+
+export const createProject = async (
+  workspaceId: string,
+  createProjectBody: CreateProjectBody,
+  options?: RequestInit,
+): Promise<ProjectSummary> => {
+  return customFetch<ProjectSummary>(getCreateProjectUrl(workspaceId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createProjectBody),
+  });
+};
+
+export const getCreateProjectMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createProject>>,
+    TError,
+    { workspaceId: string; data: BodyType<CreateProjectBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createProject>>,
+  TError,
+  { workspaceId: string; data: BodyType<CreateProjectBody> },
+  TContext
+> => {
+  const mutationKey = ["createProject"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createProject>>,
+    { workspaceId: string; data: BodyType<CreateProjectBody> }
+  > = (props) => {
+    const { workspaceId, data } = props ?? {};
+
+    return createProject(workspaceId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createProject>>
+>;
+export type CreateProjectMutationBody = BodyType<CreateProjectBody>;
+export type CreateProjectMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Create a new project
+ */
+export const useCreateProject = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createProject>>,
+    TError,
+    { workspaceId: string; data: BodyType<CreateProjectBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createProject>>,
+  TError,
+  { workspaceId: string; data: BodyType<CreateProjectBody> },
+  TContext
+> => {
+  return useMutation(getCreateProjectMutationOptions(options));
+};
+
+/**
+ * @summary Get project with tasks and members
+ */
+export const getGetProjectUrl = (projectId: string) => {
+  return `/api/projects/${projectId}`;
+};
+
+export const getProject = async (
+  projectId: string,
+  options?: RequestInit,
+): Promise<ProjectDetail> => {
+  return customFetch<ProjectDetail>(getGetProjectUrl(projectId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetProjectQueryKey = (projectId: string) => {
+  return [`/api/projects/${projectId}`] as const;
+};
+
+export const getGetProjectQueryOptions = <
+  TData = Awaited<ReturnType<typeof getProject>>,
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+>(
+  projectId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProject>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetProjectQueryKey(projectId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getProject>>> = ({
+    signal,
+  }) => getProject(projectId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getProject>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetProjectQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getProject>>
+>;
+export type GetProjectQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Get project with tasks and members
+ */
+
+export function useGetProject<
+  TData = Awaited<ReturnType<typeof getProject>>,
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+>(
+  projectId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getProject>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetProjectQueryOptions(projectId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a project (team_lead or ADMIN only)
+ */
+export const getUpdateProjectUrl = (projectId: string) => {
+  return `/api/projects/${projectId}`;
+};
+
+export const updateProject = async (
+  projectId: string,
+  updateProjectBody: UpdateProjectBody,
+  options?: RequestInit,
+): Promise<ProjectSummary> => {
+  return customFetch<ProjectSummary>(getUpdateProjectUrl(projectId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateProjectBody),
+  });
+};
+
+export const getUpdateProjectMutationOptions = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateProject>>,
+    TError,
+    { projectId: string; data: BodyType<UpdateProjectBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateProject>>,
+  TError,
+  { projectId: string; data: BodyType<UpdateProjectBody> },
+  TContext
+> => {
+  const mutationKey = ["updateProject"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateProject>>,
+    { projectId: string; data: BodyType<UpdateProjectBody> }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return updateProject(projectId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateProject>>
+>;
+export type UpdateProjectMutationBody = BodyType<UpdateProjectBody>;
+export type UpdateProjectMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Update a project (team_lead or ADMIN only)
+ */
+export const useUpdateProject = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateProject>>,
+    TError,
+    { projectId: string; data: BodyType<UpdateProjectBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateProject>>,
+  TError,
+  { projectId: string; data: BodyType<UpdateProjectBody> },
+  TContext
+> => {
+  return useMutation(getUpdateProjectMutationOptions(options));
+};
+
+/**
+ * @summary Delete a project (team_lead or ADMIN only)
+ */
+export const getDeleteProjectUrl = (projectId: string) => {
+  return `/api/projects/${projectId}`;
+};
+
+export const deleteProject = async (
+  projectId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getDeleteProjectUrl(projectId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteProjectMutationOptions = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteProject>>,
+    TError,
+    { projectId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteProject>>,
+  TError,
+  { projectId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteProject"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteProject>>,
+    { projectId: string }
+  > = (props) => {
+    const { projectId } = props ?? {};
+
+    return deleteProject(projectId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteProject>>
+>;
+
+export type DeleteProjectMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Delete a project (team_lead or ADMIN only)
+ */
+export const useDeleteProject = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteProject>>,
+    TError,
+    { projectId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteProject>>,
+  TError,
+  { projectId: string },
+  TContext
+> => {
+  return useMutation(getDeleteProjectMutationOptions(options));
+};
+
+/**
+ * @summary List project members
+ */
+export const getListProjectMembersUrl = (projectId: string) => {
+  return `/api/projects/${projectId}/members`;
+};
+
+export const listProjectMembers = async (
+  projectId: string,
+  options?: RequestInit,
+): Promise<ProjectMember[]> => {
+  return customFetch<ProjectMember[]>(getListProjectMembersUrl(projectId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProjectMembersQueryKey = (projectId: string) => {
+  return [`/api/projects/${projectId}/members`] as const;
+};
+
+export const getListProjectMembersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProjectMembers>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  projectId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProjectMembers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListProjectMembersQueryKey(projectId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listProjectMembers>>
+  > = ({ signal }) =>
+    listProjectMembers(projectId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProjectMembers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProjectMembersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProjectMembers>>
+>;
+export type ListProjectMembersQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List project members
+ */
+
+export function useListProjectMembers<
+  TData = Awaited<ReturnType<typeof listProjectMembers>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  projectId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProjectMembers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProjectMembersQueryOptions(projectId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a member to a project (team_lead or ADMIN only)
+ */
+export const getAddProjectMemberUrl = (projectId: string) => {
+  return `/api/projects/${projectId}/members`;
+};
+
+export const addProjectMember = async (
+  projectId: string,
+  addProjectMemberBody: AddProjectMemberBody,
+  options?: RequestInit,
+): Promise<ProjectMember> => {
+  return customFetch<ProjectMember>(getAddProjectMemberUrl(projectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(addProjectMemberBody),
+  });
+};
+
+export const getAddProjectMemberMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addProjectMember>>,
+    TError,
+    { projectId: string; data: BodyType<AddProjectMemberBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof addProjectMember>>,
+  TError,
+  { projectId: string; data: BodyType<AddProjectMemberBody> },
+  TContext
+> => {
+  const mutationKey = ["addProjectMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof addProjectMember>>,
+    { projectId: string; data: BodyType<AddProjectMemberBody> }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return addProjectMember(projectId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AddProjectMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof addProjectMember>>
+>;
+export type AddProjectMemberMutationBody = BodyType<AddProjectMemberBody>;
+export type AddProjectMemberMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Add a member to a project (team_lead or ADMIN only)
+ */
+export const useAddProjectMember = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof addProjectMember>>,
+    TError,
+    { projectId: string; data: BodyType<AddProjectMemberBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof addProjectMember>>,
+  TError,
+  { projectId: string; data: BodyType<AddProjectMemberBody> },
+  TContext
+> => {
+  return useMutation(getAddProjectMemberMutationOptions(options));
+};
+
+/**
+ * @summary Remove a member from a project (team_lead or ADMIN only)
+ */
+export const getRemoveProjectMemberUrl = (
+  projectId: string,
+  userId: string,
+) => {
+  return `/api/projects/${projectId}/members/${userId}`;
+};
+
+export const removeProjectMember = async (
+  projectId: string,
+  userId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(
+    getRemoveProjectMemberUrl(projectId, userId),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getRemoveProjectMemberMutationOptions = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeProjectMember>>,
+    TError,
+    { projectId: string; userId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof removeProjectMember>>,
+  TError,
+  { projectId: string; userId: string },
+  TContext
+> => {
+  const mutationKey = ["removeProjectMember"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof removeProjectMember>>,
+    { projectId: string; userId: string }
+  > = (props) => {
+    const { projectId, userId } = props ?? {};
+
+    return removeProjectMember(projectId, userId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RemoveProjectMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof removeProjectMember>>
+>;
+
+export type RemoveProjectMemberMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Remove a member from a project (team_lead or ADMIN only)
+ */
+export const useRemoveProjectMember = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof removeProjectMember>>,
+    TError,
+    { projectId: string; userId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof removeProjectMember>>,
+  TError,
+  { projectId: string; userId: string },
+  TContext
+> => {
+  return useMutation(getRemoveProjectMemberMutationOptions(options));
+};
+
+/**
+ * @summary List tasks in a project
+ */
+export const getListTasksUrl = (projectId: string) => {
+  return `/api/projects/${projectId}/tasks`;
+};
+
+export const listTasks = async (
+  projectId: string,
+  options?: RequestInit,
+): Promise<TaskDetail[]> => {
+  return customFetch<TaskDetail[]>(getListTasksUrl(projectId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTasksQueryKey = (projectId: string) => {
+  return [`/api/projects/${projectId}/tasks`] as const;
+};
+
+export const getListTasksQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTasks>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  projectId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTasks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTasksQueryKey(projectId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listTasks>>> = ({
+    signal,
+  }) => listTasks(projectId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!projectId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listTasks>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type ListTasksQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTasks>>
+>;
+export type ListTasksQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List tasks in a project
+ */
+
+export function useListTasks<
+  TData = Awaited<ReturnType<typeof listTasks>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  projectId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTasks>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTasksQueryOptions(projectId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a task (any workspace member)
+ */
+export const getCreateTaskUrl = (projectId: string) => {
+  return `/api/projects/${projectId}/tasks`;
+};
+
+export const createTask = async (
+  projectId: string,
+  createTaskBody: CreateTaskBody,
+  options?: RequestInit,
+): Promise<TaskDetail> => {
+  return customFetch<TaskDetail>(getCreateTaskUrl(projectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTaskBody),
+  });
+};
+
+export const getCreateTaskMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTask>>,
+    TError,
+    { projectId: string; data: BodyType<CreateTaskBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createTask>>,
+  TError,
+  { projectId: string; data: BodyType<CreateTaskBody> },
+  TContext
+> => {
+  const mutationKey = ["createTask"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createTask>>,
+    { projectId: string; data: BodyType<CreateTaskBody> }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return createTask(projectId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateTaskMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createTask>>
+>;
+export type CreateTaskMutationBody = BodyType<CreateTaskBody>;
+export type CreateTaskMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Create a task (any workspace member)
+ */
+export const useCreateTask = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTask>>,
+    TError,
+    { projectId: string; data: BodyType<CreateTaskBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createTask>>,
+  TError,
+  { projectId: string; data: BodyType<CreateTaskBody> },
+  TContext
+> => {
+  return useMutation(getCreateTaskMutationOptions(options));
+};
+
+/**
+ * @summary Get a task with comments
+ */
+export const getGetTaskUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}`;
+};
+
+export const getTask = async (
+  taskId: string,
+  options?: RequestInit,
+): Promise<TaskDetail> => {
+  return customFetch<TaskDetail>(getGetTaskUrl(taskId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTaskQueryKey = (taskId: string) => {
+  return [`/api/tasks/${taskId}`] as const;
+};
+
+export const getGetTaskQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTask>>,
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+>(
+  taskId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getTask>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTaskQueryKey(taskId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTask>>> = ({
+    signal,
+  }) => getTask(taskId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!taskId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getTask>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetTaskQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTask>>
+>;
+export type GetTaskQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Get a task with comments
+ */
+
+export function useGetTask<
+  TData = Awaited<ReturnType<typeof getTask>>,
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+>(
+  taskId: string,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getTask>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTaskQueryOptions(taskId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a task (assignee, team_lead, or ADMIN)
+ */
+export const getUpdateTaskUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}`;
+};
+
+export const updateTask = async (
+  taskId: string,
+  updateTaskBody: UpdateTaskBody,
+  options?: RequestInit,
+): Promise<TaskDetail> => {
+  return customFetch<TaskDetail>(getUpdateTaskUrl(taskId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateTaskBody),
+  });
+};
+
+export const getUpdateTaskMutationOptions = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTask>>,
+    TError,
+    { taskId: string; data: BodyType<UpdateTaskBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTask>>,
+  TError,
+  { taskId: string; data: BodyType<UpdateTaskBody> },
+  TContext
+> => {
+  const mutationKey = ["updateTask"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTask>>,
+    { taskId: string; data: BodyType<UpdateTaskBody> }
+  > = (props) => {
+    const { taskId, data } = props ?? {};
+
+    return updateTask(taskId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTaskMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTask>>
+>;
+export type UpdateTaskMutationBody = BodyType<UpdateTaskBody>;
+export type UpdateTaskMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Update a task (assignee, team_lead, or ADMIN)
+ */
+export const useUpdateTask = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTask>>,
+    TError,
+    { taskId: string; data: BodyType<UpdateTaskBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTask>>,
+  TError,
+  { taskId: string; data: BodyType<UpdateTaskBody> },
+  TContext
+> => {
+  return useMutation(getUpdateTaskMutationOptions(options));
+};
+
+/**
+ * @summary Delete a task (assignee, team_lead, or ADMIN)
+ */
+export const getDeleteTaskUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}`;
+};
+
+export const deleteTask = async (
+  taskId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getDeleteTaskUrl(taskId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTaskMutationOptions = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTask>>,
+    TError,
+    { taskId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTask>>,
+  TError,
+  { taskId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteTask"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTask>>,
+    { taskId: string }
+  > = (props) => {
+    const { taskId } = props ?? {};
+
+    return deleteTask(taskId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTaskMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTask>>
+>;
+
+export type DeleteTaskMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Delete a task (assignee, team_lead, or ADMIN)
+ */
+export const useDeleteTask = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTask>>,
+    TError,
+    { taskId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTask>>,
+  TError,
+  { taskId: string },
+  TContext
+> => {
+  return useMutation(getDeleteTaskMutationOptions(options));
+};
+
+/**
+ * @summary List comments on a task
+ */
+export const getListCommentsUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}/comments`;
+};
+
+export const listComments = async (
+  taskId: string,
+  options?: RequestInit,
+): Promise<CommentDetail[]> => {
+  return customFetch<CommentDetail[]>(getListCommentsUrl(taskId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCommentsQueryKey = (taskId: string) => {
+  return [`/api/tasks/${taskId}/comments`] as const;
+};
+
+export const getListCommentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listComments>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  taskId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCommentsQueryKey(taskId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listComments>>> = ({
+    signal,
+  }) => listComments(taskId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!taskId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listComments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCommentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listComments>>
+>;
+export type ListCommentsQueryError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary List comments on a task
+ */
+
+export function useListComments<
+  TData = Awaited<ReturnType<typeof listComments>>,
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+>(
+  taskId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listComments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCommentsQueryOptions(taskId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a comment to a task (any workspace member)
+ */
+export const getCreateCommentUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}/comments`;
+};
+
+export const createComment = async (
+  taskId: string,
+  createCommentBody: CreateCommentBody,
+  options?: RequestInit,
+): Promise<CommentDetail> => {
+  return customFetch<CommentDetail>(getCreateCommentUrl(taskId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createCommentBody),
+  });
+};
+
+export const getCreateCommentMutationOptions = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createComment>>,
+    TError,
+    { taskId: string; data: BodyType<CreateCommentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createComment>>,
+  TError,
+  { taskId: string; data: BodyType<CreateCommentBody> },
+  TContext
+> => {
+  const mutationKey = ["createComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createComment>>,
+    { taskId: string; data: BodyType<CreateCommentBody> }
+  > = (props) => {
+    const { taskId, data } = props ?? {};
+
+    return createComment(taskId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createComment>>
+>;
+export type CreateCommentMutationBody = BodyType<CreateCommentBody>;
+export type CreateCommentMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse
+>;
+
+/**
+ * @summary Add a comment to a task (any workspace member)
+ */
+export const useCreateComment = <
+  TError = ErrorType<UnauthorizedResponse | ForbiddenResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createComment>>,
+    TError,
+    { taskId: string; data: BodyType<CreateCommentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createComment>>,
+  TError,
+  { taskId: string; data: BodyType<CreateCommentBody> },
+  TContext
+> => {
+  return useMutation(getCreateCommentMutationOptions(options));
+};
+
+/**
+ * @summary Delete a comment (author or ADMIN)
+ */
+export const getDeleteCommentUrl = (commentId: string) => {
+  return `/api/comments/${commentId}`;
+};
+
+export const deleteComment = async (
+  commentId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(getDeleteCommentUrl(commentId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCommentMutationOptions = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteComment>>,
+    TError,
+    { commentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteComment>>,
+  TError,
+  { commentId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteComment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteComment>>,
+    { commentId: string }
+  > = (props) => {
+    const { commentId } = props ?? {};
+
+    return deleteComment(commentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCommentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteComment>>
+>;
+
+export type DeleteCommentMutationError = ErrorType<
+  UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+>;
+
+/**
+ * @summary Delete a comment (author or ADMIN)
+ */
+export const useDeleteComment = <
+  TError = ErrorType<
+    UnauthorizedResponse | ForbiddenResponse | NotFoundResponse
+  >,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteComment>>,
+    TError,
+    { commentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteComment>>,
+  TError,
+  { commentId: string },
+  TContext
+> => {
+  return useMutation(getDeleteCommentMutationOptions(options));
+};
