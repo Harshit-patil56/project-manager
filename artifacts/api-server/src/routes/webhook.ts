@@ -31,7 +31,6 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
   let event: { type: string; data: Record<string, unknown> };
 
   try {
-    // express.raw() gives us a Buffer; convert to string for svix verification
     const payload = Buffer.isBuffer(req.body)
       ? req.body.toString("utf-8")
       : JSON.stringify(req.body);
@@ -91,6 +90,23 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
         created_at?: number;
         updated_at?: number;
       };
+
+      // Ensure the owner user exists in our DB before inserting the workspace
+      // (org webhook may fire before user.created webhook is processed)
+      if (d.created_by) {
+        await db
+          .insert(usersTable)
+          .values({
+            id: d.created_by,
+            name: "Unknown",
+            email: "",
+            image: "",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .onConflictDoNothing();
+      }
+
       await db
         .insert(workspacesTable)
         .values({
@@ -123,15 +139,45 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
       const d = data as {
         id: string;
         organization: { id: string };
-        public_user_data: { user_id: string };
+        public_user_data: {
+          user_id: string;
+          first_name?: string;
+          last_name?: string;
+          image_url?: string;
+          identifier?: string;
+        };
         role: string;
       };
+
+      const { user_id, first_name, last_name, image_url, identifier } = d.public_user_data;
+
+      // Upsert the user from membership data before inserting the membership
+      const name = [first_name, last_name].filter(Boolean).join(" ") || "Unknown";
+      await db
+        .insert(usersTable)
+        .values({
+          id: user_id,
+          name,
+          email: identifier ?? "",
+          image: image_url ?? "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: usersTable.id,
+          set: {
+            name,
+            image: image_url ?? "",
+            updatedAt: new Date(),
+          },
+        });
+
       const role = d.role === "org:admin" ? "ADMIN" : "MEMBER";
       await db
         .insert(workspaceMembersTable)
         .values({
           id: d.id,
-          userId: d.public_user_data.user_id,
+          userId: user_id,
           workspaceId: d.organization.id,
           role,
           message: "",

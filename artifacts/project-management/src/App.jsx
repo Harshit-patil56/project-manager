@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@clerk/react";
 import { Toaster } from "react-hot-toast";
@@ -20,6 +20,7 @@ import AccountPage from "./pages/AccountPage";
 function AuthBridge() {
     const { getToken, isSignedIn, isLoaded } = useAuth();
     const dispatch = useDispatch();
+    const hasFetched = useRef(false);
 
     useEffect(() => {
         setTokenGetter(getToken);
@@ -27,8 +28,15 @@ function AuthBridge() {
     }, [getToken]);
 
     useEffect(() => {
-        if (isLoaded && isSignedIn) {
-            dispatch(fetchWorkspaces());
+        if (isLoaded && isSignedIn && !hasFetched.current) {
+            hasFetched.current = true;
+            // Small delay to ensure the token getter is ready
+            setTimeout(() => {
+                dispatch(fetchWorkspaces());
+            }, 100);
+        }
+        if (isLoaded && !isSignedIn) {
+            hasFetched.current = false;
         }
     }, [isLoaded, isSignedIn, dispatch]);
 
