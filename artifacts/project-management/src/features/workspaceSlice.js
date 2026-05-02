@@ -8,11 +8,14 @@ export const fetchWorkspaces = createAsyncThunk(
     if (!workspaces || workspaces.length === 0) return [];
     const populated = await Promise.all(
       workspaces.map(async (ws) => {
-        const [full, projects] = await Promise.all([
+        const [full, projectsBasic] = await Promise.all([
           apiFetch(`/api/workspaces/${ws.id}`),
           apiFetch(`/api/workspaces/${ws.id}/projects`),
         ]);
-        return { ...full, projects: projects || [] };
+        const projects = await Promise.all(
+          (projectsBasic || []).map((p) => apiFetch(`/api/projects/${p.id}`))
+        );
+        return { ...full, projects };
       })
     );
     return populated;
@@ -67,6 +70,17 @@ export const deleteTasksThunk = createAsyncThunk(
       taskIds.map((id) => apiFetch(`/api/tasks/${id}`, { method: "DELETE" }))
     );
     return { taskIds, projectId };
+  }
+);
+
+export const addProjectMemberThunk = createAsyncThunk(
+  "workspace/addProjectMember",
+  async ({ projectId, userId }) => {
+    const member = await apiFetch(`/api/projects/${projectId}/members`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+    return { projectId, member };
   }
 );
 
@@ -215,6 +229,23 @@ const workspaceSlice = createSlice({
         state.workspaces = state.workspaces.map((ws) => ({
           ...ws,
           projects: removeTasks(ws.projects),
+        }));
+      })
+
+      .addCase(addProjectMemberThunk.fulfilled, (state, action) => {
+        const { projectId, member } = action.payload;
+        const addMember = (projects) =>
+          projects.map((p) =>
+            p.id === projectId
+              ? { ...p, members: [...(p.members || []), member] }
+              : p
+          );
+        if (state.currentWorkspace) {
+          state.currentWorkspace.projects = addMember(state.currentWorkspace.projects);
+        }
+        state.workspaces = state.workspaces.map((ws) => ({
+          ...ws,
+          projects: addMember(ws.projects),
         }));
       })
 

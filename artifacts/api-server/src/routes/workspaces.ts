@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { createClerkClient } from "@clerk/backend";
 import { db } from "@workspace/db";
 import { workspacesTable, workspaceMembersTable, usersTable } from "@workspace/db/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -91,6 +92,37 @@ router.get(
         user: r.user,
       })),
     );
+  },
+);
+
+router.post(
+  "/workspaces/:workspaceId/invite",
+  authenticate,
+  requireWorkspaceMember((r) => r.params.workspaceId),
+  async (req, res): Promise<void> => {
+    const { workspaceId } = req.params;
+    const { emailAddress, role } = req.body;
+
+    if (!emailAddress) {
+      res.status(400).json({ error: "emailAddress is required" });
+      return;
+    }
+
+    try {
+      const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      await clerk.organizations.createOrganizationInvitation({
+        organizationId: workspaceId,
+        emailAddress,
+        role: role || "org:member",
+        inviterUserId: (req as AuthedRequest).userId,
+      });
+      res.json({ message: "Invitation sent" });
+    } catch (err: unknown) {
+      const clerkErr = err as { errors?: { message: string }[]; message?: string };
+      res.status(400).json({
+        error: clerkErr.errors?.[0]?.message || clerkErr.message || "Failed to send invitation",
+      });
+    }
   },
 );
 

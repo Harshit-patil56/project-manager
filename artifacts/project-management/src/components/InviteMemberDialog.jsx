@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Mail, UserPlus } from "lucide-react";
 import { useSelector } from "react-redux";
+import toast from "react-hot-toast";
+import { apiFetch } from "../lib/api";
 
 const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
 
@@ -13,7 +15,21 @@ const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-
+        if (!currentWorkspace) return;
+        setIsSubmitting(true);
+        try {
+            await apiFetch(`/api/workspaces/${currentWorkspace.id}/invite`, {
+                method: "POST",
+                body: JSON.stringify({ emailAddress: formData.email, role: formData.role }),
+            });
+            toast.success("Invitation sent!");
+            setFormData({ email: "", role: "org:member" });
+            setIsDialogOpen(false);
+        } catch (err) {
+            toast.error(err.message || "Failed to send invitation");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isDialogOpen) return null;
