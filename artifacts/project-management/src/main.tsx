@@ -1,7 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, useNavigate } from "react-router-dom";
 import { ClerkProvider } from "@clerk/react";
-import { shadcn } from "@clerk/themes";
 import { Provider } from "react-redux";
 import { store } from "./app/store.js";
 import App from "./App.jsx";
@@ -18,8 +17,6 @@ if (!clerkPubKey) {
 }
 
 const clerkAppearance = {
-  theme: shadcn,
-  cssLayerName: "clerk",
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
