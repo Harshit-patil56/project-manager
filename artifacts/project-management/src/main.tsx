@@ -46,8 +46,9 @@ const darkAppearance = {
     colorBackground: "#18181b",
     colorInputBackground: "#27272a",
     colorText: "#f4f4f5",
+    colorTextOnPrimaryBackground: "#ffffff",
     colorTextSecondary: "#a1a1aa",
-    colorNeutral: "#3f3f46",
+    colorNeutral: "#ffffff",
   },
   elements: {
     rootBox: "w-full flex justify-center",
