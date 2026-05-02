@@ -30,15 +30,17 @@ function AuthBridge() {
     useEffect(() => {
         if (isLoaded && isSignedIn && !hasFetched.current) {
             hasFetched.current = true;
-            // Small delay to ensure the token getter is ready
-            setTimeout(() => {
-                dispatch(fetchWorkspaces());
-            }, 100);
+            // Confirm a valid token is available before hitting the API
+            getToken().then((token) => {
+                if (token) {
+                    dispatch(fetchWorkspaces());
+                }
+            });
         }
         if (isLoaded && !isSignedIn) {
             hasFetched.current = false;
         }
-    }, [isLoaded, isSignedIn, dispatch]);
+    }, [isLoaded, isSignedIn, dispatch, getToken]);
 
     return null;
 }

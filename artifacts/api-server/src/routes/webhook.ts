@@ -91,8 +91,7 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
         updated_at?: number;
       };
 
-      // Ensure the owner user exists in our DB before inserting the workspace
-      // (org webhook may fire before user.created webhook is processed)
+      // Ensure owner user exists before FK reference
       if (d.created_by) {
         await db
           .insert(usersTable)
@@ -138,7 +137,7 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
     if (type === "organizationMembership.created") {
       const d = data as {
         id: string;
-        organization: { id: string };
+        organization: { id: string; name: string; slug?: string; image_url?: string; created_by?: string };
         public_user_data: {
           user_id: string;
           first_name?: string;
@@ -150,14 +149,14 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
       };
 
       const { user_id, first_name, last_name, image_url, identifier } = d.public_user_data;
+      const userName = [first_name, last_name].filter(Boolean).join(" ") || "Unknown";
 
-      // Upsert the user from membership data before inserting the membership
-      const name = [first_name, last_name].filter(Boolean).join(" ") || "Unknown";
+      // Ensure user exists
       await db
         .insert(usersTable)
         .values({
           id: user_id,
-          name,
+          name: userName,
           email: identifier ?? "",
           image: image_url ?? "",
           createdAt: new Date(),
@@ -165,12 +164,24 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
         })
         .onConflictDoUpdate({
           target: usersTable.id,
-          set: {
-            name,
-            image: image_url ?? "",
-            updatedAt: new Date(),
-          },
+          set: { name: userName, image: image_url ?? "", updatedAt: new Date() },
         });
+
+      // Ensure workspace exists (membership event can arrive before organization.created)
+      const org = d.organization;
+      await db
+        .insert(workspacesTable)
+        .values({
+          id: org.id,
+          name: org.name ?? "Unknown",
+          slug: org.slug ?? org.id,
+          imageUrl: org.image_url ?? "",
+          ownerId: org.created_by ?? user_id,
+          settings: {},
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .onConflictDoNothing();
 
       const role = d.role === "org:admin" ? "ADMIN" : "MEMBER";
       await db
@@ -178,7 +189,7 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
         .values({
           id: d.id,
           userId: user_id,
-          workspaceId: d.organization.id,
+          workspaceId: org.id,
           role,
           message: "",
         })
