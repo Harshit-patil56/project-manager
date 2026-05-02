@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { SignedIn, SignedOut } from "@clerk/react";
+import { Show } from "@clerk/react";
 import { Toaster } from "react-hot-toast";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
@@ -21,12 +21,12 @@ const App = () => {
                     path="/"
                     element={
                         <>
-                            <SignedIn>
+                            <Show when="signed-in">
                                 <Navigate to="/dashboard" replace />
-                            </SignedIn>
-                            <SignedOut>
+                            </Show>
+                            <Show when="signed-out">
                                 <LandingPage />
-                            </SignedOut>
+                            </Show>
                         </>
                     }
                 />
@@ -39,12 +39,12 @@ const App = () => {
                 <Route
                     element={
                         <>
-                            <SignedIn>
+                            <Show when="signed-in">
                                 <Layout />
-                            </SignedIn>
-                            <SignedOut>
+                            </Show>
+                            <Show when="signed-out">
                                 <Navigate to="/sign-in" replace />
-                            </SignedOut>
+                            </Show>
                         </>
                     }
                 >
