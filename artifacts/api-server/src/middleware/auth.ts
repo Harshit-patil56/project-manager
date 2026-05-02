@@ -1,4 +1,4 @@
-import { createClerkClient } from "@clerk/backend";
+import { verifyToken } from "@clerk/backend";
 import type { Request, Response, NextFunction } from "express";
 import { db } from "@workspace/db";
 import { workspaceMembersTable } from "@workspace/db/schema";
@@ -8,23 +8,22 @@ if (!process.env.CLERK_SECRET_KEY) {
   throw new Error("CLERK_SECRET_KEY must be set");
 }
 
-const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+const secretKey = process.env.CLERK_SECRET_KEY;
 
-// Build the list of authorized parties from the Replit domain env vars
-// so Clerk's azp claim check passes in both dev and production
+// Build authorized parties from Replit domain env vars so the JWT azp check passes
 function buildAuthorizedParties(): string[] {
-  const parties: string[] = ["http://localhost", "http://localhost:25074"];
-  const replitDomains = process.env.REPLIT_DOMAINS ?? "";
-  for (const d of replitDomains.split(",").map((s) => s.trim()).filter(Boolean)) {
-    parties.push(`https://${d}`);
-    parties.push(`http://${d}`);
+  const parties = new Set<string>(["http://localhost", "http://localhost:25074"]);
+  const domains = [
+    process.env.REPLIT_DOMAINS ?? "",
+    process.env.REPLIT_DEV_DOMAIN ?? "",
+  ];
+  for (const raw of domains) {
+    for (const d of raw.split(",").map((s) => s.trim()).filter(Boolean)) {
+      parties.add(`https://${d}`);
+      parties.add(`http://${d}`);
+    }
   }
-  const devDomain = process.env.REPLIT_DEV_DOMAIN ?? "";
-  if (devDomain) {
-    parties.push(`https://${devDomain}`);
-    parties.push(`http://${devDomain}`);
-  }
-  return [...new Set(parties)];
+  return [...parties];
 }
 
 const authorizedParties = buildAuthorizedParties();
@@ -48,11 +47,14 @@ export async function authenticate(
   }
 
   try {
-    const payload = await clerk.verifyToken(token, { authorizedParties });
+    // Use the standalone verifyToken from @clerk/backend — NOT clerk.verifyToken()
+    // (createClerkClient does not expose a verifyToken method)
+    const payload = await verifyToken(token, { secretKey, authorizedParties });
     (req as AuthedRequest).userId = payload.sub;
     next();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    req.log?.warn({ err, detail: message }, "Token verification failed");
     res.status(401).json({ error: "Invalid token", detail: message });
   }
 }
