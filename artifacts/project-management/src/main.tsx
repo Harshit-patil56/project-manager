@@ -29,7 +29,7 @@ const lightAppearance = {
     colorInputBackground: "#f9fafb",
     colorText: "#111827",
     colorTextSecondary: "#6b7280",
-    colorNeutral: "#e5e7eb",
+    colorNeutral: "#111827",
   },
   elements: {
     rootBox: "w-full flex justify-center",

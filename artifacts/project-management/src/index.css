@@ -73,6 +73,54 @@
     opacity: 1;
 }
 
+/* ── UserButton popover: light mode ─────────────────────────────────────── */
+/* Action button text is derived from colorNeutral alpha — force it dark     */
+.cl-userButtonPopoverCard {
+    background-color: #ffffff;
+    color: #111827;
+}
+
+.cl-userButtonPopoverCard * {
+    color: inherit;
+}
+
+.cl-userPreviewMainIdentifier {
+    color: #111827;
+    font-weight: 600;
+}
+
+.cl-userPreviewSecondaryIdentifier {
+    color: #6b7280;
+}
+
+/* ── UserButton popover: dark mode ───────────────────────────────────────── */
+.dark .cl-userButtonPopoverCard {
+    background-color: #18181b;
+    color: #f4f4f5;
+}
+
+.dark .cl-userButtonPopoverCard * {
+    color: inherit;
+}
+
+.dark .cl-userPreviewMainIdentifier {
+    color: #f4f4f5;
+    font-weight: 600;
+}
+
+.dark .cl-userPreviewSecondaryIdentifier {
+    color: #a1a1aa;
+}
+
+.dark .cl-userButtonPopoverActions {
+    background-color: #18181b;
+}
+
+.dark .cl-userButtonPopoverFooter {
+    background-color: #18181b;
+    border-color: #3f3f46;
+}
+
 /* ── Dark mode: Clerk component base colors ──────────────────────────────── */
 /* Set color on the top-level containers so all children inherit it.         */
 .dark .cl-card,
