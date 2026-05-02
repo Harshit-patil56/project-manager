@@ -10,6 +10,7 @@ import TaskDetails from "./pages/TaskDetails";
 import SignInPage from "./pages/SignInPage";
 import SignUpPage from "./pages/SignUpPage";
 import LandingPage from "./pages/LandingPage";
+import AccountPage from "./pages/AccountPage";
 
 const App = () => {
     return (
@@ -53,6 +54,7 @@ const App = () => {
                     <Route path="projects" element={<Projects />} />
                     <Route path="projectsDetail" element={<ProjectDetails />} />
                     <Route path="taskDetails" element={<TaskDetails />} />
+                    <Route path="account" element={<AccountPage />} />
                 </Route>
             </Routes>
         </>
