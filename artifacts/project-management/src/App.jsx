@@ -1,6 +1,9 @@
+import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Show } from "@clerk/react";
 import { Toaster } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import { loadTheme } from "./features/themeSlice";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
@@ -13,6 +16,12 @@ import LandingPage from "./pages/LandingPage";
 import AccountPage from "./pages/AccountPage";
 
 const App = () => {
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        dispatch(loadTheme());
+    }, [dispatch]);
+
     return (
         <>
             <Toaster />

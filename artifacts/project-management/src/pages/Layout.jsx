@@ -1,20 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
-import { useDispatch, useSelector } from 'react-redux'
-import { loadTheme } from '../features/themeSlice'
+import { useSelector } from 'react-redux'
 import { Loader2Icon } from 'lucide-react'
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
     const { loading } = useSelector((state) => state.workspace)
-    const dispatch = useDispatch()
-
-    // Initial load of theme
-    useEffect(() => {
-        dispatch(loadTheme())
-    }, [])
 
     if (loading) return (
         <div className='flex items-center justify-center h-screen bg-white dark:bg-zinc-950'>
