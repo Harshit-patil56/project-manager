@@ -218,8 +218,7 @@ const TaskDetails = () => {
         const before = newComment.slice(0, mentionCursorPos);
         const after = newComment.slice(mentionCursorPos);
         const atStart = before.lastIndexOf("@");
-        const firstName = member.name.split(" ")[0];
-        const newVal = before.slice(0, atStart) + `@${firstName} ` + after;
+        const newVal = before.slice(0, atStart) + `@${member.name} ` + after;
         setNewComment(newVal);
         setMentionOpen(false);
         setMentionQuery("");
