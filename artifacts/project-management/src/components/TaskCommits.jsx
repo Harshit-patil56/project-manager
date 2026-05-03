@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Github, ExternalLink } from "lucide-react";
+import { Github, ExternalLink, GitBranch } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { apiFetch } from "../lib/api";
 
@@ -79,7 +79,8 @@ export default function TaskCommits({ taskId }) {
                                         {commit.sha}
                                     </code>
                                     {commit.branch && (
-                                        <span className="px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 font-mono">
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ddf4ff] dark:bg-[#1f3044] text-[#0969da] dark:text-[#79c0ff] border border-[#54aeff66] dark:border-[#388bfd66] font-mono text-xs">
+                                            <GitBranch className="size-3 flex-shrink-0" />
                                             {commit.branch}
                                         </span>
                                     )}
