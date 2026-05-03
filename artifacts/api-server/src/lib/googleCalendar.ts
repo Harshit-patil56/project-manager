@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { googleTokensTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { createHmac } from "crypto";
+import { logger } from "./logger.js";
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -122,7 +123,10 @@ export async function createTaskEvent(
 ): Promise<string | null> {
   try {
     const cal = await getCalendar(userId);
-    if (!cal) return null;
+    if (!cal) {
+      logger.info({ userId }, "createTaskEvent: no calendar token for user");
+      return null;
+    }
     const res = await cal.events.insert({
       calendarId: "primary",
       requestBody: {
@@ -140,7 +144,8 @@ export async function createTaskEvent(
       },
     });
     return res.data.id ?? null;
-  } catch {
+  } catch (err) {
+    logger.error({ err, userId, params }, "createTaskEvent failed");
     return null;
   }
 }
