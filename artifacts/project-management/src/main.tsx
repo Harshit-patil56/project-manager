@@ -74,9 +74,9 @@ function ClerkWithRouter({ children }: { children: React.ReactNode }) {
       publishableKey={clerkPubKey}
       {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
       appearance={appearance}
-      signInUrl={`${basePath}/#/sign-in`}
-      signUpUrl={`${basePath}/#/sign-up`}
-      afterSignOutUrl={basePath || "/"}
+      signInUrl="/#/sign-in"
+      signUpUrl="/#/sign-up"
+      afterSignOutUrl="/"
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}
     >
