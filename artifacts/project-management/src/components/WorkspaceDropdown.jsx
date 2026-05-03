@@ -13,6 +13,8 @@ function WorkspaceDropdown() {
     const [isOpen, setIsOpen] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
     const [newName, setNewName] = useState("");
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
     const [isCreating, setIsCreating] = useState(false);
     const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
     const [isArchiving, setIsArchiving] = useState(false);
@@ -42,6 +44,17 @@ function WorkspaceDropdown() {
         setIsCreating(true);
         try {
             const org = await createOrganization({ name: newName.trim() });
+            
+            // Upload logo if selected
+            if (imageFile) {
+                try {
+                    await org.setLogo({ file: imageFile });
+                } catch (logoErr) {
+                    console.error("Failed to upload logo:", logoErr);
+                    toast.error("Workspace created, but logo upload failed.");
+                }
+            }
+
             await new Promise((r) => setTimeout(r, 2000));
             await dispatch(fetchWorkspaces()).unwrap();
             if (org?.id) {
@@ -50,6 +63,8 @@ function WorkspaceDropdown() {
             }
             setShowCreate(false);
             setNewName("");
+            setImageFile(null);
+            setImagePreview(null);
             setIsOpen(false);
             toast.success("Workspace created!");
             navigate("/dashboard");
@@ -57,6 +72,22 @@ function WorkspaceDropdown() {
             toast.error(err?.message || "Failed to create workspace");
         } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                toast.error("Image size must be less than 2MB");
+                return;
+            }
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -187,6 +218,37 @@ function WorkspaceDropdown() {
                             A workspace groups your projects and team members together.
                         </p>
                         <form onSubmit={handleCreateWorkspace} className="space-y-4">
+                            <div className="flex flex-col items-center gap-3 py-2">
+                                <div className="relative group">
+                                    <div className="w-20 h-20 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center overflow-hidden bg-zinc-50 dark:bg-zinc-800 transition-colors group-hover:border-blue-400">
+                                        {imagePreview ? (
+                                            <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Plus className="w-6 h-6 text-zinc-400 group-hover:text-blue-500" />
+                                        )}
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                        title="Select workspace logo"
+                                    />
+                                    {imagePreview && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); setImageFile(null); setImagePreview(null); }}
+                                            className="absolute -top-1 -right-1 bg-zinc-800 text-white rounded-full p-1 shadow-lg hover:bg-zinc-700 border border-zinc-600"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+                                <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    {imageFile ? "Logo Selected" : "Upload Logo (Optional)"}
+                                </span>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                                     Workspace Name
