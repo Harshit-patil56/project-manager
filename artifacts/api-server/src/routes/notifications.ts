@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { notificationsTable, tasksTable, projectsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { authenticate, type AuthedRequest } from "../middleware/auth.js";
+import { registerPushFunction } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -83,12 +84,15 @@ router.get("/notifications/events", authenticate, async (req, res): Promise<void
   });
 });
 
-// Export helper to push notifications to subscribers
-export function pushNotificationToUser(userId: string, notification: any) {
+// Helper to push notifications to subscribers
+function pushNotificationToUser(userId: string, notification: any) {
   const send = subscribers.get(userId);
   if (send) {
     send(notification);
   }
 }
+
+// Register push function for notifications library
+registerPushFunction(pushNotificationToUser);
 
 export default router;
