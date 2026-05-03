@@ -63,6 +63,20 @@ function UserAvatar({ user, size = 6 }) {
     );
 }
 
+function renderCommentWithMentions(content) {
+    const parts = content.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith("@")) {
+            return (
+                <span key={i} className="text-blue-500 dark:text-blue-400 font-medium">
+                    {part}
+                </span>
+            );
+        }
+        return part;
+    });
+}
+
 const TaskDetails = () => {
     const [searchParams] = useSearchParams();
     const projectId = searchParams.get("projectId");
@@ -321,7 +335,7 @@ const TaskDetails = () => {
                                                         <span className="font-medium text-gray-900 dark:text-white">{comment.user?.name || "User"}</span>
                                                         <span className="text-xs text-gray-400 dark:text-zinc-600">· {format(new Date(comment.createdAt), "dd MMM yyyy, HH:mm")}</span>
                                                     </div>
-                                                    <p className="text-sm text-gray-900 dark:text-zinc-200 whitespace-pre-wrap">{comment.content}</p>
+                                                    <p className="text-sm text-gray-900 dark:text-zinc-200 whitespace-pre-wrap">{renderCommentWithMentions(comment.content)}</p>
                                                 </div>
                                             ))}
                                         </div>
@@ -518,30 +532,30 @@ const TaskDetails = () => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
                         <div>
-                            <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Estimate</label>
+                            <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1.5">Estimate</label>
                             {editingEstimate ? (
-                                <div className="flex gap-1">
-                                    <input value={estimateInput} onChange={e => setEstimateInput(e.target.value)} placeholder="e.g. 2h 30m" autoFocus className="flex-1 text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-blue-400" onKeyDown={e => { if (e.key === 'Enter') handleSaveEstimate(); if (e.key === 'Escape') setEditingEstimate(false); }} />
-                                    <button onClick={handleSaveEstimate} className="text-xs px-2 py-1 rounded bg-blue-500 text-white">Save</button>
+                                <div className="flex gap-2">
+                                    <input value={estimateInput} onChange={e => setEstimateInput(e.target.value)} placeholder="2h 30m" autoFocus className="flex-1 text-xs px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-400" onKeyDown={e => { if (e.key === 'Enter') handleSaveEstimate(); if (e.key === 'Escape') setEditingEstimate(false); }} />
+                                    <button onClick={handleSaveEstimate} className="text-xs px-3 py-2 rounded bg-blue-500 hover:bg-blue-600 text-white whitespace-nowrap">Save</button>
                                 </div>
                             ) : (
-                                <button onClick={() => { setEstimateInput(""); setEditingEstimate(true); }} className="text-sm text-zinc-700 dark:text-zinc-300 hover:text-blue-500 dark:hover:text-blue-400 transition">
-                                    {task.estimatedMinutes ? formatMinutes(task.estimatedMinutes) : <span className="text-zinc-400 dark:text-zinc-500 text-xs">Set estimate</span>}
+                                <button onClick={() => { setEstimateInput(""); setEditingEstimate(true); }} className="w-full text-left text-sm px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition">
+                                    {task.estimatedMinutes ? formatMinutes(task.estimatedMinutes) : <span className="text-zinc-400 dark:text-zinc-500">Set estimate</span>}
                                 </button>
                             )}
                         </div>
                         <div>
-                            <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1">Log Time</label>
+                            <label className="text-xs text-zinc-500 dark:text-zinc-400 block mb-1.5">Log Time</label>
                             {editingLog ? (
-                                <div className="flex gap-1">
-                                    <input value={logInput} onChange={e => setLogInput(e.target.value)} placeholder="e.g. 1h" autoFocus className="flex-1 text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-blue-400" onKeyDown={e => { if (e.key === 'Enter') handleLogTime(); if (e.key === 'Escape') setEditingLog(false); }} />
-                                    <button onClick={handleLogTime} className="text-xs px-2 py-1 rounded bg-blue-500 text-white">Log</button>
+                                <div className="flex gap-2">
+                                    <input value={logInput} onChange={e => setLogInput(e.target.value)} placeholder="1h" autoFocus className="flex-1 text-xs px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-400" onKeyDown={e => { if (e.key === 'Enter') handleLogTime(); if (e.key === 'Escape') setEditingLog(false); }} />
+                                    <button onClick={handleLogTime} className="text-xs px-3 py-2 rounded bg-blue-500 hover:bg-blue-600 text-white whitespace-nowrap">Log</button>
                                 </div>
                             ) : (
-                                <button onClick={() => { setLogInput(""); setEditingLog(true); }} className="text-sm text-zinc-700 dark:text-zinc-300 hover:text-blue-500 dark:hover:text-blue-400 transition">
-                                    {task.loggedMinutes ? formatMinutes(task.loggedMinutes) : <span className="text-zinc-400 dark:text-zinc-500 text-xs">Log time</span>}
+                                <button onClick={() => { setLogInput(""); setEditingLog(true); }} className="w-full text-left text-sm px-3 py-2 rounded border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition">
+                                    {task.loggedMinutes ? formatMinutes(task.loggedMinutes) : <span className="text-zinc-400 dark:text-zinc-500">Log time</span>}
                                 </button>
                             )}
                         </div>
