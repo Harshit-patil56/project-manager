@@ -1,14 +1,39 @@
 import { useState, useRef, useEffect } from "react";
-import { Calendar as CalendarIcon, ChevronDown, UserCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronDown, UserCircle2, PlusIcon, XIcon } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { format } from "date-fns";
 import { createTaskThunk } from "../features/workspaceSlice";
 import toast from "react-hot-toast";
 import { useOrganization } from "@clerk/react";
+import { apiFetch } from "../lib/api";
 
-function AssigneePicker({ teamMembers, value, onChange }) {
+function Avatar({ member, size }) {
+    const [imgError, setImgError] = useState(false);
+    const sizeClass = `size-${size}`;
+    const initials = member.name
+        ? member.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+        : "?";
+    if ((member.imageUrl || member.image) && !imgError) {
+        return (
+            <img
+                src={member.imageUrl || member.image}
+                alt={member.name}
+                className={`${sizeClass} rounded-full object-cover flex-shrink-0`}
+                onError={() => setImgError(true)}
+            />
+        );
+    }
+    return (
+        <span className={`${sizeClass} rounded-full flex-shrink-0 bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-semibold text-zinc-700 dark:text-zinc-200`}>
+            {initials}
+        </span>
+    );
+}
+
+function AssigneePicker({ teamMembers, value, onChange, exclude = [] }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
+    const available = teamMembers.filter(m => !exclude.includes(m.id));
     const selected = teamMembers.find((m) => m.id === value) ?? null;
 
     useEffect(() => {
@@ -39,10 +64,9 @@ function AssigneePicker({ teamMembers, value, onChange }) {
                 )}
                 <ChevronDown className={`size-4 text-zinc-400 flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"}`} />
             </button>
-
             {open && (
                 <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {teamMembers.map((member) => (
+                    {available.map((member) => (
                         <li key={member.id}>
                             <button
                                 type="button"
@@ -52,9 +76,7 @@ function AssigneePicker({ teamMembers, value, onChange }) {
                                 <Avatar member={member} size={6} />
                                 <div className="flex-1 min-w-0">
                                     <p className="truncate text-zinc-900 dark:text-zinc-100 font-medium">{member.name}</p>
-                                    {member.email && (
-                                        <p className="truncate text-xs text-zinc-400">{member.email}</p>
-                                    )}
+                                    {member.email && <p className="truncate text-xs text-zinc-400">{member.email}</p>}
                                 </div>
                             </button>
                         </li>
@@ -65,28 +87,77 @@ function AssigneePicker({ teamMembers, value, onChange }) {
     );
 }
 
-function Avatar({ member, size }) {
-    const [imgError, setImgError] = useState(false);
-    const sizeClass = `size-${size}`;
-    const initials = member.name
-        ? member.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
-        : "?";
+function ExtraAssigneesPicker({ teamMembers, extraIds, onChange, primaryId }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const excluded = [primaryId, ...extraIds].filter(Boolean);
+    const available = teamMembers.filter(m => !excluded.includes(m.id));
 
-    if (member.imageUrl && !imgError) {
-        return (
-            <img
-                src={member.imageUrl}
-                alt={member.name}
-                className={`${sizeClass} rounded-full object-cover flex-shrink-0`}
-                onError={() => setImgError(true)}
-            />
-        );
-    }
+    useEffect(() => {
+        function handleClick(e) {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    const addMember = (id) => {
+        if (extraIds.length >= 4) { toast.error("Maximum 5 assignees total"); return; }
+        onChange([...extraIds, id]);
+        setOpen(false);
+    };
+
+    const removeMember = (id) => onChange(extraIds.filter(i => i !== id));
+
+    const selectedMembers = extraIds.map(id => teamMembers.find(m => m.id === id)).filter(Boolean);
 
     return (
-        <span className={`${sizeClass} rounded-full flex-shrink-0 bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-semibold text-zinc-700 dark:text-zinc-200`}>
-            {initials}
-        </span>
+        <div className="space-y-1">
+            <label className="text-sm font-medium">Additional Assignees <span className="text-zinc-400 font-normal text-xs">(optional, max 4 more)</span></label>
+            <div className="flex flex-wrap gap-1.5 items-center mt-1 min-h-[32px] p-1.5 rounded border border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900">
+                {selectedMembers.map(m => (
+                    <span key={m.id} className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 rounded-full pl-1 pr-1.5 py-0.5 text-xs text-zinc-700 dark:text-zinc-300">
+                        <Avatar member={m} size={4} />
+                        {m.name.split(" ")[0]}
+                        <button type="button" onClick={() => removeMember(m.id)} className="text-zinc-400 hover:text-red-500 ml-0.5 transition">
+                            <XIcon className="size-2.5" />
+                        </button>
+                    </span>
+                ))}
+                {available.length > 0 && extraIds.length < 4 && (
+                    <div ref={ref} className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setOpen(o => !o)}
+                            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 px-1.5 py-0.5 rounded-full border border-dashed border-zinc-300 dark:border-zinc-600 transition"
+                        >
+                            <PlusIcon className="size-3" /> Add
+                        </button>
+                        {open && (
+                            <ul className="absolute z-50 mt-1 left-0 w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                                {available.map(member => (
+                                    <li key={member.id}>
+                                        <button
+                                            type="button"
+                                            onClick={() => addMember(member.id)}
+                                            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left transition"
+                                        >
+                                            <Avatar member={member} size={5} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="truncate text-zinc-900 dark:text-zinc-100 text-sm">{member.name}</p>
+                                            </div>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+                )}
+                {selectedMembers.length === 0 && available.length === 0 && extraIds.length === 0 && (
+                    <span className="text-xs text-zinc-400">No more members available</span>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -117,20 +188,15 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         startDate: "",
         dueDate: "",
     });
+    const [extraAssigneeIds, setExtraAssigneeIds] = useState([]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!formData.assigneeId) {
-            toast.error("Please select an assignee");
-            return;
-        }
-        if (!formData.dueDate) {
-            toast.error("Please select a due date");
-            return;
-        }
+        if (!formData.assigneeId) { toast.error("Please select an assignee"); return; }
+        if (!formData.dueDate) { toast.error("Please select a due date"); return; }
         setIsSubmitting(true);
         try {
-            await dispatch(
+            const result = await dispatch(
                 createTaskThunk({
                     projectId,
                     title: formData.title,
@@ -143,9 +209,23 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                     dueDate: formData.dueDate,
                 })
             ).unwrap();
+
+            // Add extra assignees if any
+            if (extraAssigneeIds.length > 0 && result?.id) {
+                await Promise.allSettled(
+                    extraAssigneeIds.map(uid =>
+                        apiFetch(`/api/tasks/${result.id}/assignees`, {
+                            method: "POST",
+                            body: JSON.stringify({ userId: uid }),
+                        })
+                    )
+                );
+            }
+
             toast.success("Task created!");
             setShowCreateTask(false);
             setFormData({ title: "", description: "", type: "TASK", status: "TODO", priority: "MEDIUM", assigneeId: "", startDate: "", dueDate: "" });
+            setExtraAssigneeIds([]);
         } catch (err) {
             toast.error(err?.message || "Failed to create task");
         } finally {
@@ -153,9 +233,15 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         }
     };
 
+    // When primary assignee changes, remove them from extra list
+    const handlePrimaryChange = (id) => {
+        setFormData(f => ({ ...f, assigneeId: id }));
+        setExtraAssigneeIds(prev => prev.filter(i => i !== id));
+    };
+
     return showCreateTask ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/60 backdrop-blur">
-            <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-lg w-full max-w-md p-6 text-zinc-900 dark:text-white">
+            <div className="bg-white dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-800 rounded-lg shadow-lg w-full max-w-md p-6 text-zinc-900 dark:text-white max-h-[90vh] overflow-y-auto">
                 <h2 className="text-xl font-bold mb-4">Create New Task</h2>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -176,7 +262,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                             value={formData.description}
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             placeholder="Describe the task"
-                            className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1 h-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1 h-20 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                         />
                     </div>
 
@@ -211,11 +297,12 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-sm font-medium">Assignee</label>
+                            <label className="text-sm font-medium">Primary Assignee</label>
                             <AssigneePicker
                                 teamMembers={teamMembers}
                                 value={formData.assigneeId}
-                                onChange={(id) => setFormData({ ...formData, assigneeId: id })}
+                                onChange={handlePrimaryChange}
+                                exclude={extraAssigneeIds}
                             />
                         </div>
                         <div className="space-y-1">
@@ -232,29 +319,36 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         </div>
                     </div>
 
+                    <ExtraAssigneesPicker
+                        teamMembers={teamMembers}
+                        extraIds={extraAssigneeIds}
+                        onChange={setExtraAssigneeIds}
+                        primaryId={formData.assigneeId}
+                    />
+
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Start Date <span className="text-zinc-400 font-normal">(optional)</span></label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mt-1">
                                 <CalendarIcon className="size-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                                 <input
                                     type="date"
                                     value={formData.startDate}
                                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                    className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
+                                    className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm"
                                 />
                             </div>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Due Date</label>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mt-1">
                                 <CalendarIcon className="size-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                                 <input
                                     type="date"
                                     value={formData.dueDate}
                                     onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                                     min={formData.startDate || new Date().toISOString().split("T")[0]}
-                                    className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
+                                    className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm"
                                 />
                             </div>
                         </div>
@@ -263,7 +357,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                     <div className="flex justify-end gap-2 pt-2">
                         <button
                             type="button"
-                            onClick={() => setShowCreateTask(false)}
+                            onClick={() => { setShowCreateTask(false); setExtraAssigneeIds([]); }}
                             className="rounded border border-zinc-300 dark:border-zinc-700 px-5 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
                         >
                             Cancel
@@ -271,7 +365,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="rounded px-5 py-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white dark:text-zinc-200 transition disabled:opacity-60"
+                            className="rounded px-5 py-2 text-sm bg-gradient-to-br from-blue-500 to-blue-600 hover:opacity-90 text-white transition disabled:opacity-60"
                         >
                             {isSubmitting ? "Creating..." : "Create Task"}
                         </button>

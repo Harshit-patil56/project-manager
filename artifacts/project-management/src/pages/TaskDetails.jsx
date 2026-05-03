@@ -403,13 +403,13 @@ const TaskDetails = () => {
                                     <PlusIcon className="size-2.5" /> Add
                                 </button>
                                 {showLabelPicker && (
-                                    <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-50 p-2 space-y-1">
+                                    <div className="absolute top-full right-0 mt-1 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg z-50 p-2 space-y-1 overflow-hidden">
                                         {availableLabels.length > 0 && (
                                             <div className="space-y-0.5">
                                                 {availableLabels.map(l => (
                                                     <button key={l.id} onClick={() => handleAddLabel(l.id)} className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-zinc-100 dark:hover:bg-zinc-800 text-left">
                                                         <span className="size-3 rounded-full flex-shrink-0" style={{ backgroundColor: l.color }} />
-                                                        <span className="text-sm text-zinc-700 dark:text-zinc-300">{l.name}</span>
+                                                        <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">{l.name}</span>
                                                     </button>
                                                 ))}
                                                 <hr className="border-zinc-100 dark:border-zinc-800 my-1" />
@@ -417,9 +417,9 @@ const TaskDetails = () => {
                                         )}
                                         <form onSubmit={handleCreateLabel} className="space-y-1.5 pt-1">
                                             <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wide px-1">New label</p>
-                                            <div className="flex gap-1.5">
+                                            <div className="flex gap-1.5 min-w-0">
                                                 <input value={newLabelColor} onChange={e => setNewLabelColor(e.target.value)} type="color" className="size-7 rounded border border-zinc-200 dark:border-zinc-700 cursor-pointer p-0.5 flex-shrink-0" />
-                                                <input value={newLabelName} onChange={e => setNewLabelName(e.target.value)} placeholder="Label name" className="flex-1 text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-blue-400" />
+                                                <input value={newLabelName} onChange={e => setNewLabelName(e.target.value)} placeholder="Label name" className="min-w-0 flex-1 text-xs px-2 py-1 rounded border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-blue-400" />
                                             </div>
                                             <button type="submit" className="w-full text-xs py-1 rounded bg-blue-500 hover:bg-blue-600 text-white transition">Create & Add</button>
                                         </form>

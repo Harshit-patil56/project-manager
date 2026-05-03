@@ -81,9 +81,9 @@ export default function Navbar({ setIsSidebarOpen }) {
         setQuery('')
         setResults(null)
         if (type === 'task') {
-            navigate(`/projects?id=${item.projectId}&tab=tasks`)
+            navigate(`/taskDetails?projectId=${item.projectId}&taskId=${item.id}`)
         } else if (type === 'project') {
-            navigate(`/projects?id=${item.id}&tab=tasks`)
+            navigate(`/projects?id=${item.id}`)
         } else if (type === 'member') {
             navigate('/team')
         }
