@@ -40,12 +40,27 @@ pnpm workspace monorepo using TypeScript. Full-stack project management app with
 
 ## Database Schema (lib/db)
 
-Tables: `users`, `workspaces`, `workspaceMembers`, `projects`, `projectMembers`, `tasks`, `comments`
+Tables: `users`, `workspaces`, `workspaceMembers`, `projects`, `projectMembers`, `tasks`, `comments`, `notifications`, `labels`, `taskLabels`, `taskAssignees`
 
 - Workspace IDs = Clerk org IDs (text PK)
 - User IDs = Clerk user IDs (text PK)
 - Project/task/comment IDs = `randomUUID()`
 - Enum types: task `status` (TODO/IN_PROGRESS/DONE), `type` (TASK/BUG/FEATURE/IMPROVEMENT/OTHER), `priority` (LOW/MEDIUM/HIGH)
+- `tasks` table has `estimatedMinutes` (nullable int) and `loggedMinutes` (int, default 0) for time tracking
+- `notifications` table: userId, type (TASK_ASSIGNED/COMMENT_ON_TASK/TASK_DONE/MENTION), title, body, taskId, read (bool)
+- `labels` table: per-project color labels; `taskLabels` is the many-to-many join
+- `taskAssignees` table: additional assignees beyond the primary `assigneeId` (max 5 total)
+
+## Features
+
+1. **Global Search** — `/api/search` endpoint, debounced search in Navbar with grouped dropdown (Tasks/Projects/People)
+2. **In-App Notifications** — Bell icon in Navbar with unread badge; `/api/notifications` routes; triggers on task assign, status→DONE, comments, and @mentions; polls every 30s
+3. **Labels/Tags** — Per-project colored labels; task-label many-to-many; `/api/projects/:id/labels` + `/api/tasks/:id/labels` routes; managed inline in TaskDetails
+4. **@Mentions in Comments** — `@name` autocomplete dropdown in comment textarea; mention parsing fires MENTION notifications to named users
+5. **Timeline Tab** — Per-project Gantt chart (`ProjectTimeline.jsx`) in ProjectDetails
+6. **Workload View** — Team page workload section with per-member task bar chart by priority
+7. **Time Tracking** — Estimate + log time in TaskDetails with progress bar; PATCH `/api/tasks/:id` accepts `estimatedMinutes`/`loggedMinutes`
+8. **Multiple Assignees** — Up to 5 assignees; extra assignees panel in TaskDetails with add/remove; `/api/tasks/:id/assignees` routes
 
 ## Key Commands
 

@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -28,6 +28,8 @@ export const tasksTable = pgTable("tasks", {
   dueDate: timestamp("due_date").notNull(),
   calendarStartEventId: text("calendar_start_event_id"),
   calendarDueEventId: text("calendar_due_event_id"),
+  estimatedMinutes: integer("estimated_minutes"),
+  loggedMinutes: integer("logged_minutes").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),

@@ -1,8 +1,29 @@
 import { useEffect, useState } from "react";
-import { UsersIcon, Search, UserPlus, Shield, Activity } from "lucide-react";
+import { UsersIcon, Search, UserPlus, Shield, Activity, BarChart2Icon } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
 import { useSelector } from "react-redux";
 import { useOrganization } from "@clerk/react";
+
+const PRIORITY_COLORS = {
+    HIGH: { bar: "bg-red-500", label: "text-red-500" },
+    MEDIUM: { bar: "bg-amber-400", label: "text-amber-500" },
+    LOW: { bar: "bg-zinc-400", label: "text-zinc-400" },
+};
+
+function WorkloadBar({ count, max }) {
+    const pct = max > 0 ? Math.min(100, (count / max) * 100) : 0;
+    return (
+        <div className="flex items-center gap-2 flex-1">
+            <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div
+                    className="h-full bg-blue-500 rounded-full transition-all"
+                    style={{ width: `${pct}%` }}
+                />
+            </div>
+            <span className="text-xs text-zinc-500 dark:text-zinc-400 w-4 text-right">{count}</span>
+        </div>
+    );
+}
 
 const Team = () => {
 
@@ -28,7 +49,8 @@ const Team = () => {
         const name = fullName || email || "Unknown";
         const image = m.publicUserData?.imageUrl ?? "";
         const role = m.role === "org:admin" ? "ADMIN" : "MEMBER";
-        return { id: m.id, name, email, image, role };
+        const userId = m.publicUserData?.userId ?? m.id;
+        return { id: m.id, userId, name, email, image, role };
     });
 
     const filteredMembers = members.filter(
@@ -36,6 +58,23 @@ const Team = () => {
             m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             m.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Workload computation
+    const openTasks = tasks.filter(t => t.status !== "DONE" && !t.deletedAt);
+    const workloadMap = {};
+    for (const member of members) {
+        workloadMap[member.userId] = { HIGH: 0, MEDIUM: 0, LOW: 0, total: 0 };
+    }
+    for (const task of openTasks) {
+        if (task.assigneeId && workloadMap[task.assigneeId] !== undefined) {
+            const p = task.priority || "LOW";
+            workloadMap[task.assigneeId][p] = (workloadMap[task.assigneeId][p] || 0) + 1;
+            workloadMap[task.assigneeId].total += 1;
+        }
+    }
+    const maxWorkload = Math.max(1, ...Object.values(workloadMap).map(w => w.total));
+    const membersWithWork = members.filter(m => workloadMap[m.userId]?.total > 0)
+        .sort((a, b) => (workloadMap[b.userId]?.total ?? 0) - (workloadMap[a.userId]?.total ?? 0));
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
@@ -193,6 +232,67 @@ const Team = () => {
                     </div>
                 )}
             </div>
+
+            {/* Workload Section */}
+            {openTasks.length > 0 && (
+                <div className="space-y-4 max-w-4xl">
+                    <div className="flex items-center gap-2">
+                        <BarChart2Icon className="size-4 text-zinc-500 dark:text-zinc-400" />
+                        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Workload</h2>
+                        <span className="text-xs text-zinc-400 dark:text-zinc-500">— open tasks per member</span>
+                    </div>
+
+                    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                        {members.length === 0 ? (
+                            <div className="px-4 py-6 text-sm text-zinc-400 dark:text-zinc-500 text-center">No members yet</div>
+                        ) : (
+                            <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                {/* Header */}
+                                <div className="hidden sm:grid grid-cols-[200px_1fr_80px_80px_80px_80px] px-4 py-2 bg-zinc-50 dark:bg-zinc-900/50 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                                    <span>Member</span>
+                                    <span>Open Tasks</span>
+                                    <span className="text-right text-red-500">High</span>
+                                    <span className="text-right text-amber-500">Medium</span>
+                                    <span className="text-right text-zinc-400">Low</span>
+                                    <span className="text-right">Total</span>
+                                </div>
+                                {members
+                                    .slice()
+                                    .sort((a, b) => (workloadMap[b.userId]?.total ?? 0) - (workloadMap[a.userId]?.total ?? 0))
+                                    .map(member => {
+                                        const wl = workloadMap[member.userId] ?? { HIGH: 0, MEDIUM: 0, LOW: 0, total: 0 };
+                                        return (
+                                            <div key={member.id} className="px-4 py-3 flex flex-col sm:grid sm:grid-cols-[200px_1fr_80px_80px_80px_80px] items-center gap-2">
+                                                <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                    {member.image ? (
+                                                        <img src={member.image} alt={member.name} className="size-6 rounded-full object-cover flex-shrink-0" />
+                                                    ) : (
+                                                        <div className="size-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0">
+                                                            {member.name.charAt(0).toUpperCase()}
+                                                        </div>
+                                                    )}
+                                                    <span className="text-sm text-zinc-800 dark:text-zinc-200 truncate max-w-[140px]">{member.name}</span>
+                                                </div>
+                                                <WorkloadBar count={wl.total} max={maxWorkload} />
+                                                <span className="hidden sm:block text-right text-xs text-red-500 font-medium">{wl.HIGH}</span>
+                                                <span className="hidden sm:block text-right text-xs text-amber-500 font-medium">{wl.MEDIUM}</span>
+                                                <span className="hidden sm:block text-right text-xs text-zinc-400 font-medium">{wl.LOW}</span>
+                                                <span className="hidden sm:block text-right text-xs text-zinc-700 dark:text-zinc-300 font-semibold">{wl.total}</span>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Priority legend */}
+                    <div className="flex gap-4 text-xs text-zinc-500 dark:text-zinc-400">
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-red-500 inline-block" />High</span>
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-400 inline-block" />Medium</span>
+                        <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-zinc-400 inline-block" />Low</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

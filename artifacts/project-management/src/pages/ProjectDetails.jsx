@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon, FileStackIcon, ZapIcon, GithubIcon } from "lucide-react";
+import { ArrowLeftIcon, PlusIcon, SettingsIcon, BarChart3Icon, CalendarIcon, FileStackIcon, ZapIcon, GithubIcon, GanttChartSquareIcon } from "lucide-react";
 import ProjectAnalytics from "../components/ProjectAnalytics";
 import ProjectSettings from "../components/ProjectSettings";
 import CreateTaskDialog from "../components/CreateTaskDialog";
 import ProjectCalendar from "../components/ProjectCalendar";
 import ProjectTasks from "../components/ProjectTasks";
 import ProjectDevelopment from "../components/ProjectDevelopment";
+import ProjectTimeline from "../components/ProjectTimeline";
 
 export default function ProjectDetail() {
 
@@ -100,6 +101,7 @@ export default function ProjectDetail() {
                         { key: "tasks", label: "Tasks", icon: FileStackIcon },
                         { key: "development", label: "Development", icon: GithubIcon },
                         { key: "calendar", label: "Calendar", icon: CalendarIcon },
+                        { key: "timeline", label: "Timeline", icon: GanttChartSquareIcon },
                         { key: "analytics", label: "Analytics", icon: BarChart3Icon },
                         { key: "settings", label: "Settings", icon: SettingsIcon },
                     ].map((tabItem) => (
@@ -129,6 +131,11 @@ export default function ProjectDetail() {
                     {activeTab === "calendar" && (
                         <div className=" dark:bg-zinc-900/40 rounded max-w-6xl">
                             <ProjectCalendar tasks={tasks} />
+                        </div>
+                    )}
+                    {activeTab === "timeline" && (
+                        <div className="dark:bg-zinc-900/40 rounded max-w-6xl">
+                            <ProjectTimeline tasks={tasks} />
                         </div>
                     )}
                     {activeTab === "settings" && (

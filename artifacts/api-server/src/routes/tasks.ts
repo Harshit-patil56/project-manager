@@ -15,6 +15,7 @@ import {
   updateTaskEvent,
   deleteTaskEvent,
 } from "../lib/googleCalendar.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -265,6 +266,17 @@ router.post(
       dueDate: parsedDueDate,
     });
 
+    // Notify assignee if they didn't create the task
+    if (assigneeId !== userId) {
+      createNotification({
+        userId: assigneeId,
+        type: "TASK_ASSIGNED",
+        title: `You were assigned to "${title}"`,
+        body: `In project "${project.name}"`,
+        taskId,
+      }).catch(() => {});
+    }
+
     // Create calendar events for the assignee (fire-and-forget, non-blocking)
     const taskKey = `${project.slug.toUpperCase()}-${nextNumber}`;
     const calDesc = buildCalendarDescription(
@@ -376,6 +388,8 @@ router.patch(
       assigneeId,
       startDate,
       dueDate,
+      estimatedMinutes,
+      loggedMinutes,
     } = req.body;
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (title !== undefined) updateData.title = title;
@@ -387,8 +401,31 @@ router.patch(
     if (startDate !== undefined)
       updateData.startDate = startDate ? new Date(startDate) : null;
     if (dueDate !== undefined) updateData.dueDate = new Date(dueDate);
+    if (estimatedMinutes !== undefined) updateData.estimatedMinutes = estimatedMinutes;
+    if (loggedMinutes !== undefined) updateData.loggedMinutes = loggedMinutes;
 
     await db.update(tasksTable).set(updateData).where(eq(tasksTable.id, taskId));
+
+    // Notifications for status/assignee changes
+    const newAssigneeForNotif = assigneeId ?? task.assigneeId;
+    if (status === "DONE" && task.status !== "DONE" && newAssigneeForNotif !== userId) {
+      createNotification({
+        userId: newAssigneeForNotif,
+        type: "TASK_DONE",
+        title: `"${task.title}" was marked Done`,
+        body: `In project "${project.name}"`,
+        taskId,
+      }).catch(() => {});
+    }
+    if (assigneeId && assigneeId !== task.assigneeId && assigneeId !== userId) {
+      createNotification({
+        userId: assigneeId,
+        type: "TASK_ASSIGNED",
+        title: `You were assigned to "${task.title}"`,
+        body: `In project "${project.name}"`,
+        taskId,
+      }).catch(() => {});
+    }
 
     // Sync calendar events if task is not DONE (done = delete events)
     const newStatus = status ?? task.status;

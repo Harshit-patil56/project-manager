@@ -7,9 +7,10 @@ import {
   workspaceMembersTable,
   usersTable,
 } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, ilike } from "drizzle-orm";
 import { authenticate, type AuthedRequest } from "../middleware/auth.js";
 import { randomUUID } from "crypto";
+import { createNotification } from "../lib/notifications.js";
 
 const router = Router();
 
@@ -100,10 +101,12 @@ router.post(
       return;
     }
 
+    const task = tasks[0];
+
     const projects = await db
       .select()
       .from(projectsTable)
-      .where(eq(projectsTable.id, tasks[0].projectId))
+      .where(eq(projectsTable.id, task.projectId))
       .limit(1);
 
     const membership = await getWorkspaceMembership(userId, projects[0].workspaceId);
@@ -126,6 +129,49 @@ router.post(
       .innerJoin(usersTable, eq(commentsTable.userId, usersTable.id))
       .where(eq(commentsTable.id, commentId))
       .limit(1);
+
+    const commenter = rows[0].user;
+
+    // Notify the task assignee if they're not the commenter
+    if (task.assigneeId !== userId) {
+      createNotification({
+        userId: task.assigneeId,
+        type: "COMMENT_ON_TASK",
+        title: `New comment on "${task.title}"`,
+        body: `${commenter.name ?? "Someone"}: ${content.slice(0, 80)}${content.length > 80 ? "…" : ""}`,
+        taskId,
+      }).catch(() => {});
+    }
+
+    // Parse @mentions and notify mentioned users
+    const mentionPattern = /@([a-zA-Z0-9._-]+)/g;
+    const mentions = [...content.matchAll(mentionPattern)].map((m) => m[1].toLowerCase());
+    if (mentions.length > 0) {
+      // Get all workspace members
+      const members = await db
+        .select({ wm: workspaceMembersTable, user: usersTable })
+        .from(workspaceMembersTable)
+        .innerJoin(usersTable, eq(workspaceMembersTable.userId, usersTable.id))
+        .where(eq(workspaceMembersTable.workspaceId, projects[0].workspaceId));
+
+      for (const member of members) {
+        const memberName = (member.user.name ?? "").toLowerCase().replace(/\s+/g, "");
+        const memberEmail = (member.user.email ?? "").toLowerCase().split("@")[0];
+        if (
+          member.user.id !== userId &&
+          member.user.id !== task.assigneeId && // already notified above
+          (mentions.some((m) => memberName.includes(m) || m.includes(memberName) || memberEmail === m))
+        ) {
+          createNotification({
+            userId: member.user.id,
+            type: "MENTION",
+            title: `${commenter.name ?? "Someone"} mentioned you`,
+            body: `In "${task.title}": ${content.slice(0, 80)}${content.length > 80 ? "…" : ""}`,
+            taskId,
+          }).catch(() => {});
+        }
+      }
+    }
 
     res.status(201).json({
       id: rows[0].c.id,

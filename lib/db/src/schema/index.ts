@@ -5,3 +5,6 @@ export * from "./tasks";
 export * from "./comments";
 export * from "./commits";
 export * from "./google";
+export * from "./notifications";
+export * from "./labels";
+export * from "./taskAssignees";

@@ -9,6 +9,10 @@ import commentsRouter from "./comments";
 import trashRouter from "./trash";
 import githubRouter from "./github";
 import googleRouter from "./google";
+import searchRouter from "./search";
+import notificationsRouter from "./notifications";
+import labelsRouter from "./labels";
+import taskAssigneesRouter from "./taskAssignees";
 
 const router: IRouter = Router();
 
@@ -22,5 +26,9 @@ router.use(commentsRouter);
 router.use(trashRouter);
 router.use(githubRouter);
 router.use(googleRouter);
+router.use(searchRouter);
+router.use(notificationsRouter);
+router.use(labelsRouter);
+router.use(taskAssigneesRouter);
 
 export default router;
