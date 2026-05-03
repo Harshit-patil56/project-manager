@@ -9,6 +9,7 @@ import {
 } from "@workspace/db/schema";
 import { eq, and, inArray, isNotNull, isNull } from "drizzle-orm";
 import { authenticate, type AuthedRequest } from "../middleware/auth.js";
+import { createTaskEvent } from "../lib/googleCalendar.js";
 
 const router = Router();
 
@@ -180,6 +181,33 @@ router.post(
       .set({ deletedAt: null })
       .where(eq(tasksTable.id, taskId))
       .returning();
+
+    // Recreate calendar events if the task is not DONE
+    if (restored.status !== "DONE") {
+      const task = restored;
+      const project = projects[0];
+      const taskKey = `${project.slug.toUpperCase()}-${task.taskNumber}`;
+      const descLines = [
+        `Project: ${project.name}`,
+        `Type: ${task.type}`,
+        `Priority: ${task.priority}`,
+        `Status: ${task.status}`,
+      ];
+      if (task.description) descLines.push(`\n${task.description}`);
+      const calDesc = descLines.join("\n");
+
+      Promise.all([
+        task.startDate
+          ? createTaskEvent(task.assigneeId, { taskKey, title: task.title, description: calDesc, date: task.startDate, label: "starts" })
+          : Promise.resolve(null),
+        createTaskEvent(task.assigneeId, { taskKey, title: task.title, description: calDesc, date: task.dueDate, label: "due" }),
+      ]).then(([calendarStartEventId, calendarDueEventId]) => {
+        db.update(tasksTable)
+          .set({ calendarStartEventId, calendarDueEventId })
+          .where(eq(tasksTable.id, taskId))
+          .catch(() => {});
+      }).catch(() => {});
+    }
 
     res.json(restored);
   },
