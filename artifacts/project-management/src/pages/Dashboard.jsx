@@ -16,7 +16,7 @@ const Dashboard = () => {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 ">
                 <div>
                     <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-1">
-                        Welcome back, {user?.firstName || user?.fullName || 'User'}
+                        Welcome back, {user?.fullName || user?.firstName || 'User'}
                     </h1>
                     <p className="text-gray-500 dark:text-zinc-400 text-sm"> Here's what's happening with your projects today </p>
                 </div>
