@@ -49,7 +49,7 @@ export default function ProjectDevelopment({ project, tasks }) {
                             {commit.sha}
                         </code>
                         {commit.branch && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ddf4ff] dark:bg-[#1f3044] text-[#0969da] dark:text-[#79c0ff] border border-[#54aeff66] dark:border-[#388bfd66] font-mono text-xs">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 dark:bg-[#1c2128] text-blue-600 dark:text-[#58a6ff] border border-blue-200 dark:border-[#30363d] font-mono text-xs">
                                 <GitBranch className="size-3 flex-shrink-0" />
                                 {commit.branch}
                             </span>
