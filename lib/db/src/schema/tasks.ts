@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -17,6 +17,7 @@ export const taskTypeEnum = pgEnum("task_type", [
 export const tasksTable = pgTable("tasks", {
   id: text("id").primaryKey(),
   projectId: text("project_id").notNull().references(() => projectsTable.id, { onDelete: "cascade" }),
+  taskNumber: integer("task_number").notNull().default(0),
   title: text("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").notNull().default("TODO"),

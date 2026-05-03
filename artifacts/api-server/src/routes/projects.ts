@@ -62,6 +62,16 @@ router.post(
       return;
     }
 
+    // Auto-generate slug from name, deduplicate within workspace
+    const baseSlug = name.toUpperCase().replace(/[^A-Z]/g, "").substring(0, 6) || "PROJ";
+    const existingProjects = await db.select({ slug: projectsTable.slug })
+      .from(projectsTable)
+      .where(eq(projectsTable.workspaceId, workspaceId));
+    const existingSlugs = new Set(existingProjects.map((p) => p.slug));
+    let slug = baseSlug;
+    let counter = 2;
+    while (existingSlugs.has(slug)) { slug = baseSlug.substring(0, 5) + counter++; }
+
     const projectId = randomUUID();
     const [project] = await db
       .insert(projectsTable)
@@ -76,6 +86,7 @@ router.post(
         teamLead: userId,
         workspaceId,
         progress: 0,
+        slug,
       })
       .returning();
 

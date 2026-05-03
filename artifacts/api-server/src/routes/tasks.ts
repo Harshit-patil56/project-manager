@@ -161,10 +161,19 @@ router.post(
       return;
     }
 
+    // Auto-increment task_number within the project
+    const existingTasks = await db.select({ taskNumber: tasksTable.taskNumber })
+      .from(tasksTable)
+      .where(eq(tasksTable.projectId, projectId));
+    const nextNumber = existingTasks.length > 0
+      ? Math.max(...existingTasks.map((t) => t.taskNumber)) + 1
+      : 1;
+
     const taskId = randomUUID();
     await db.insert(tasksTable).values({
       id: taskId,
       projectId,
+      taskNumber: nextNumber,
       title,
       description,
       status: status ?? "TODO",

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import AddProjectMember from "./AddProjectMember";
 import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
+import GitHubIntegration from "./GitHubIntegration";
 import { updateProjectThunk, archiveProjectThunk } from "../features/workspaceSlice";
 
 export default function ProjectSettings({ project }) {
@@ -236,6 +237,10 @@ export default function ProjectSettings({ project }) {
                         </button>
                     </div>
                 </div>
+            </div>
+
+            <div className="lg:col-span-2">
+                <GitHubIntegration project={project} />
             </div>
 
             <ConfirmDeleteDialog

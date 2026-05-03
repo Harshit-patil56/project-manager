@@ -21,7 +21,7 @@ const priorityTexts = {
     HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
 };
 
-const ProjectTasks = ({ tasks }) => {
+const ProjectTasks = ({ tasks, projectSlug }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
@@ -166,7 +166,8 @@ const ProjectTasks = ({ tasks }) => {
                                             className="size-3 accent-zinc-600 dark:accent-zinc-500"
                                         />
                                     </th>
-                                    <th className="px-4 pl-0 py-3">Title</th>
+                                    <th className="px-4 pl-0 py-3">Key</th>
+                                    <th className="px-4 py-3">Title</th>
                                     <th className="px-4 py-3">Type</th>
                                     <th className="px-4 py-3">Priority</th>
                                     <th className="px-4 py-3">Status</th>
@@ -193,7 +194,14 @@ const ProjectTasks = ({ tasks }) => {
                                                         checked={selectedTasks.includes(task.id)}
                                                     />
                                                 </td>
-                                                <td className="px-4 pl-0 py-2">{task.title}</td>
+                                                <td className="px-4 pl-0 py-2">
+                                                    {projectSlug && task.taskNumber ? (
+                                                        <span className="px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-mono text-xs whitespace-nowrap">
+                                                            {projectSlug}-{task.taskNumber}
+                                                        </span>
+                                                    ) : "-"}
+                                                </td>
+                                                <td className="px-4 py-2">{task.title}</td>
                                                 <td className="px-4 py-2">
                                                     <div className="flex items-center gap-2">
                                                         {Icon && <Icon className={`size-4 ${color}`} />}
