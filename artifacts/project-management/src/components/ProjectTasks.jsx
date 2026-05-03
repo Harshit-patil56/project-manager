@@ -52,6 +52,18 @@ const ProjectTasks = ({ tasks }) => {
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
+    const handleStatusChange = async (task, newStatus) => {
+        const loadingId = toast.loading("Updating status...");
+        try {
+            await dispatch(updateTaskThunk({ taskId: task.id, status: newStatus })).unwrap();
+            toast.dismiss(loadingId);
+            toast.success("Task status updated");
+        } catch (error) {
+            toast.dismiss(loadingId);
+            toast.error(error?.message || "Failed to update status");
+        }
+    };
+
     const handleDelete = async () => {
         const projectId = tasks.find((t) => selectedTasks.includes(t.id))?.projectId;
         setIsDeleting(true);

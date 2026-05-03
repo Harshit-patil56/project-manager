@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Clock, AlertTriangle, User } from "lucide-react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "@clerk/react";
 
 export default function TasksSummary() {
 
     const navigate = useNavigate();
+    const { user } = useUser();
     const { currentWorkspace } = useSelector((state) => state.workspace);
     const [tasks, setTasks] = useState([]);
 
@@ -16,7 +18,7 @@ export default function TasksSummary() {
     }, [currentWorkspace]);
 
     const overdueTasks = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'DONE');
-    const myTasks = tasks.filter(i => i.status !== 'DONE');
+    const myTasks = tasks.filter(t => t.assigneeId === user?.id && t.status !== 'DONE');
     const inProgressIssues = tasks.filter(i => i.status === 'IN_PROGRESS');
 
     const summaryCards = [
