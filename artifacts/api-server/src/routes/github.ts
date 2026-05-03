@@ -111,6 +111,28 @@ router.post("/github/webhook", async (req, res): Promise<void> => {
   res.json({ matched: savedCommits.length });
 });
 
+// GET /projects/:projectId/commits — list all commits for a project with task info
+router.get("/projects/:projectId/commits", async (req, res): Promise<void> => {
+  const { projectId } = req.params;
+  const rows = await db
+    .select({ commit: commitsTable, task: tasksTable })
+    .from(commitsTable)
+    .innerJoin(tasksTable, eq(commitsTable.taskId, tasksTable.id))
+    .where(eq(commitsTable.projectId, projectId))
+    .orderBy(commitsTable.pushedAt);
+  res.json(
+    rows.reverse().map((r) => ({
+      ...r.commit,
+      task: {
+        id: r.task.id,
+        title: r.task.title,
+        taskNumber: r.task.taskNumber,
+        status: r.task.status,
+      },
+    })),
+  );
+});
+
 // GET /tasks/:taskId/commits — list all commits for a task
 router.get("/tasks/:taskId/commits", async (req, res): Promise<void> => {
   const { taskId } = req.params;
