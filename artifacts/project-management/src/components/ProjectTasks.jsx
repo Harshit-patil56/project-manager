@@ -224,14 +224,20 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                                     </select>
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <div className="flex items-center gap-1.5">
-                                                        {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full" alt="avatar" title={task.assignee.name} />}
-                                                        {(task.extraAssignees || []).map((u) => (
-                                                            <img key={u.id} src={u.image} className="size-5 rounded-full" alt="avatar" title={u.name} />
-                                                        ))}
-                                                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="flex -space-x-2">
+                                                            {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={task.assignee.name} />}
+                                                            {(task.extraAssignees || []).slice(0, 2).map((u) => (
+                                                                <img key={u.id} src={u.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={u.name} />
+                                                            ))}
+                                                            {task.extraAssignees && task.extraAssignees.length > 2 && (
+                                                                <div className="size-5 rounded-full bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-bold text-zinc-700 dark:text-zinc-200 ring-1 ring-white dark:ring-zinc-900">
+                                                                    +{task.extraAssignees.length - 2}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-xs text-zinc-600 dark:text-zinc-400 min-w-fit">
                                                             {task.assignee?.name || "-"}
-                                                            {task.extraAssignees && task.extraAssignees.length > 0 && ` +${task.extraAssignees.length}`}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -291,15 +297,19 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                                 <option value="DONE">Done</option>
                                             </select>
                                         </div>
-                                        <div className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
-                                            {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full" alt="avatar" title={task.assignee.name} />}
-                                            {(task.extraAssignees || []).map((u) => (
-                                                <img key={u.id} src={u.image} className="size-5 rounded-full" alt="avatar" title={u.name} />
-                                            ))}
-                                            <span>
-                                                {task.assignee?.name || "-"}
-                                                {task.extraAssignees && task.extraAssignees.length > 0 && ` +${task.extraAssignees.length}`}
-                                            </span>
+                                        <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                                            <div className="flex -space-x-2">
+                                                {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={task.assignee.name} />}
+                                                {(task.extraAssignees || []).slice(0, 2).map((u) => (
+                                                    <img key={u.id} src={u.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={u.name} />
+                                                ))}
+                                                {task.extraAssignees && task.extraAssignees.length > 2 && (
+                                                    <div className="size-5 rounded-full bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-bold text-zinc-700 dark:text-zinc-200 ring-1 ring-white dark:ring-zinc-900">
+                                                        +{task.extraAssignees.length - 2}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span>{task.assignee?.name || "-"}</span>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                                             <CalendarIcon className="size-4" />

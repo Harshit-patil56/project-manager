@@ -35,15 +35,19 @@ export default function NotificationBell() {
         try {
             setLoading(true)
             const data = await apiFetch(`/api/notifications?offset=${newOffset}&limit=15`)
+            const notifs = data.notifications || data || []
             if (newOffset === 0) {
-                setNotifications(data.notifications || [])
+                setNotifications(Array.isArray(notifs) ? notifs : [])
             } else {
-                setNotifications(prev => [...prev, ...(data.notifications || [])])
+                setNotifications(prev => [...prev, ...(Array.isArray(notifs) ? notifs : [])])
             }
-            setOffset(newOffset + (data.notifications?.length || 0))
-            setHasMore(data.hasMore || false)
+            setOffset(newOffset + (notifs?.length || 0))
+            setHasMore(data.hasMore ?? false)
             setLoading(false)
-        } catch { setLoading(false) }
+        } catch (e) { 
+            console.error('Notification fetch error:', e)
+            setLoading(false) 
+        }
     }, [])
 
     const loadMore = useCallback(async () => {
@@ -51,11 +55,15 @@ export default function NotificationBell() {
         try {
             setLoadingMore(true)
             const data = await apiFetch(`/api/notifications?offset=${offset}&limit=15`)
-            setNotifications(prev => [...prev, ...(data.notifications || [])])
-            setOffset(offset + (data.notifications?.length || 0))
-            setHasMore(data.hasMore || false)
+            const notifs = data.notifications || data || []
+            setNotifications(prev => [...prev, ...(Array.isArray(notifs) ? notifs : [])])
+            setOffset(offset + (notifs?.length || 0))
+            setHasMore(data.hasMore ?? false)
             setLoadingMore(false)
-        } catch { setLoadingMore(false) }
+        } catch (e) { 
+            console.error('Load more error:', e)
+            setLoadingMore(false) 
+        }
     }, [offset, hasMore, loadingMore])
 
     const handleScroll = useCallback(() => {
@@ -67,7 +75,14 @@ export default function NotificationBell() {
     }, [hasMore, loadingMore, loadMore])
 
     useEffect(() => {
+        // Initial fetch on mount
         fetchNotifications(0)
+    }, [])
+
+    useEffect(() => {
+        // SSE connection for real-time (only when open)
+        if (!open) return
+        
         const es = new EventSource('/api/notifications/events')
         es.onmessage = (e) => {
             try {
@@ -77,11 +92,13 @@ export default function NotificationBell() {
         }
         es.onerror = () => es.close()
         return () => es.close()
-    }, [])
+    }, [open])
 
     useEffect(() => {
-        if (open) fetchNotifications(0)
-    }, [open, fetchNotifications])
+        if (open) {
+            fetchNotifications(0)
+        }
+    }, [open])
 
     useEffect(() => {
         function handleClick(e) {
