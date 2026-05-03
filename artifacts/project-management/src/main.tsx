@@ -11,7 +11,9 @@ const clerkPubKey =
   (import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
     import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) as string;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL as string | undefined;
-const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+// Ensure basePath doesn't have a trailing slash for the router, but handle the root correctly
+const baseUrl = import.meta.env.BASE_URL || "/";
+const basePath = baseUrl === "/" ? "" : baseUrl.replace(/\/$/, "");
 
 if (!clerkPubKey) {
   throw new Error(
@@ -84,7 +86,7 @@ function ClerkWithRouter({ children }: { children: React.ReactNode }) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <BrowserRouter basename={basePath || "/"}>
+  <BrowserRouter basename={basePath || undefined}>
     <Provider store={store}>
       <ClerkWithRouter>
         <App />

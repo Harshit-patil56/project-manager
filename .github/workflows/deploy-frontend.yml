@@ -55,13 +55,12 @@ jobs:
       - name: Build frontend
         # Uses pnpm filtering to only build the frontend package
         run: |
-          pnpm --filter "./artifacts/project-management" run build
+          pnpm --filter "./artifacts/project-management" run build --base /project-manager/
           cp ./artifacts/project-management/dist/public/index.html ./artifacts/project-management/dist/public/404.html
         env:
           # Inject secrets into the Vite build process
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
-          BASE_PATH: /project-manager/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
