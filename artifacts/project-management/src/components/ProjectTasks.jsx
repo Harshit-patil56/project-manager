@@ -224,9 +224,15 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                                     </select>
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full" alt="avatar" />}
-                                                        {task.assignee?.name || "-"}
+                                                    <div className="flex items-center gap-1.5">
+                                                        {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full" alt="avatar" title={task.assignee.name} />}
+                                                        {(task.extraAssignees || []).map((u) => (
+                                                            <img key={u.id} src={u.image} className="size-5 rounded-full" alt="avatar" title={u.name} />
+                                                        ))}
+                                                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                                            {task.assignee?.name || "-"}
+                                                            {task.extraAssignees && task.extraAssignees.length > 0 && ` +${task.extraAssignees.length}`}
+                                                        </span>
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-2">
@@ -285,9 +291,15 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                                 <option value="DONE">Done</option>
                                             </select>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                                            {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full" alt="avatar" />}
-                                            {task.assignee?.name || "-"}
+                                        <div className="flex items-center gap-1.5 text-sm text-zinc-700 dark:text-zinc-300">
+                                            {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full" alt="avatar" title={task.assignee.name} />}
+                                            {(task.extraAssignees || []).map((u) => (
+                                                <img key={u.id} src={u.image} className="size-5 rounded-full" alt="avatar" title={u.name} />
+                                            ))}
+                                            <span>
+                                                {task.assignee?.name || "-"}
+                                                {task.extraAssignees && task.extraAssignees.length > 0 && ` +${task.extraAssignees.length}`}
+                                            </span>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                                             <CalendarIcon className="size-4" />

@@ -9,6 +9,8 @@ const router = Router();
 
 router.get("/notifications", authenticate, async (req, res): Promise<void> => {
   const userId = (req as AuthedRequest).userId;
+  const offset = parseInt(req.query.offset as string) || 0;
+  const limit = parseInt(req.query.limit as string) || 15;
 
   const rows = await db
     .select({ n: notificationsTable, t: tasksTable, p: projectsTable })
@@ -17,10 +19,16 @@ router.get("/notifications", authenticate, async (req, res): Promise<void> => {
     .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .where(eq(notificationsTable.userId, userId))
     .orderBy(desc(notificationsTable.createdAt))
-    .limit(50);
+    .offset(offset)
+    .limit(limit);
 
-  res.json(
-    rows.map((r) => ({
+  const totalRows = await db
+    .select()
+    .from(notificationsTable)
+    .where(eq(notificationsTable.userId, userId));
+
+  res.json({
+    notifications: rows.map((r) => ({
       id: r.n.id,
       type: r.n.type,
       title: r.n.title,
@@ -31,7 +39,9 @@ router.get("/notifications", authenticate, async (req, res): Promise<void> => {
       read: r.n.read,
       createdAt: r.n.createdAt,
     })),
-  );
+    total: totalRows.length,
+    hasMore: offset + limit < totalRows.length,
+  });
 });
 
 router.patch("/notifications/read-all", authenticate, async (req, res): Promise<void> => {
