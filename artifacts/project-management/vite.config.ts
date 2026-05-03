@@ -5,11 +5,6 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import fs from "fs";
 
-if (fs.existsSync(".env.local")) {
-  process.loadEnvFile(".env.local");
-}
-
-
 const rawPort = process.env.PORT || "5173";
 const port = Number(rawPort);
 
@@ -17,10 +12,7 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH || "/";
-
 export default defineConfig({
-  base: basePath,
   envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   plugins: [
     react(),
