@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { notificationsTable, tasksTable } from "@workspace/db/schema";
+import { notificationsTable, tasksTable, projectsTable } from "@workspace/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { authenticate, type AuthedRequest } from "../middleware/auth.js";
 
@@ -10,9 +10,10 @@ router.get("/notifications", authenticate, async (req, res): Promise<void> => {
   const userId = (req as AuthedRequest).userId;
 
   const rows = await db
-    .select({ n: notificationsTable, t: tasksTable })
+    .select({ n: notificationsTable, t: tasksTable, p: projectsTable })
     .from(notificationsTable)
     .leftJoin(tasksTable, eq(notificationsTable.taskId, tasksTable.id))
+    .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
     .where(eq(notificationsTable.userId, userId))
     .orderBy(desc(notificationsTable.createdAt))
     .limit(50);
@@ -25,6 +26,7 @@ router.get("/notifications", authenticate, async (req, res): Promise<void> => {
       body: r.n.body,
       taskId: r.n.taskId,
       taskTitle: r.t?.title ?? null,
+      projectId: r.p?.id ?? null,
       read: r.n.read,
       createdAt: r.n.createdAt,
     })),
@@ -58,5 +60,35 @@ router.patch("/notifications/:notificationId/read", authenticate, async (req, re
   await db.update(notificationsTable).set({ read: true }).where(eq(notificationsTable.id, notificationId));
   res.json({ ok: true });
 });
+
+// SSE endpoint for real-time notifications
+const subscribers: Map<string, (data: any) => void> = new Map();
+
+router.get("/notifications/events", authenticate, async (req, res): Promise<void> => {
+  const userId = (req as AuthedRequest).userId;
+
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  const send = (data: any) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  subscribers.set(userId, send);
+
+  req.on("close", () => {
+    subscribers.delete(userId);
+    res.end();
+  });
+});
+
+// Export helper to push notifications to subscribers
+export function pushNotificationToUser(userId: string, notification: any) {
+  const send = subscribers.get(userId);
+  if (send) {
+    send(notification);
+  }
+}
 
 export default router;

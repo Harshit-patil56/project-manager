@@ -36,9 +36,16 @@ export default function NotificationBell() {
 
     useEffect(() => {
         fetchNotifications()
-        const interval = setInterval(fetchNotifications, 30000)
-        return () => clearInterval(interval)
-    }, [fetchNotifications])
+        const es = new EventSource('/api/notifications/events')
+        es.onmessage = (e) => {
+            try {
+                const newNotif = JSON.parse(e.data)
+                setNotifications(prev => [newNotif, ...prev])
+            } catch { }
+        }
+        es.onerror = () => es.close()
+        return () => es.close()
+    }, [])
 
     useEffect(() => {
         if (open) fetchNotifications()
@@ -67,8 +74,8 @@ export default function NotificationBell() {
             } catch { /* silent */ }
         }
         setOpen(false)
-        if (notification.taskId) {
-            navigate(`/taskDetails?taskId=${notification.taskId}`)
+        if (notification.taskId && notification.projectId) {
+            navigate(`/taskDetails?projectId=${notification.projectId}&taskId=${notification.taskId}`)
         }
     }
 
