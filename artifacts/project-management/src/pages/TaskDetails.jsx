@@ -64,7 +64,7 @@ function UserAvatar({ user, size = 6 }) {
 }
 
 function renderCommentWithMentions(content) {
-    const parts = content.split(/(@\w+)/g);
+    const parts = content.split(/(@[\w\s]+)/g);
     return parts.map((part, i) => {
         if (part.startsWith("@")) {
             return (
