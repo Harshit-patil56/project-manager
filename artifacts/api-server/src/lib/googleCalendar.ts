@@ -143,7 +143,9 @@ export async function createTaskEvent(
         },
       },
     });
-    return res.data.id ?? null;
+    const eventId = res.data.id ?? null;
+    logger.info({ userId, eventId, taskKey: params.taskKey, label: params.label }, "createTaskEvent succeeded");
+    return eventId;
   } catch (err) {
     logger.error({ err, userId, params }, "createTaskEvent failed");
     return null;
