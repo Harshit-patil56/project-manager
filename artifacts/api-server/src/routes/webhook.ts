@@ -57,8 +57,8 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
         created_at?: number;
         updated_at?: number;
       };
-      const name = [d.first_name, d.last_name].filter(Boolean).join(" ") || "Unknown";
       const email = d.email_addresses?.[0]?.email_address ?? "";
+      const name = [d.first_name, d.last_name].filter(Boolean).join(" ") || email || "Unknown";
       await db
         .insert(usersTable)
         .values({
@@ -149,7 +149,7 @@ router.post("/webhooks/clerk", async (req: Request, res: Response): Promise<void
       };
 
       const { user_id, first_name, last_name, image_url, identifier } = d.public_user_data;
-      const userName = [first_name, last_name].filter(Boolean).join(" ") || "Unknown";
+      const userName = [first_name, last_name].filter(Boolean).join(" ") || identifier || "Unknown";
 
       // Ensure user exists
       await db
