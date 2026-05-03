@@ -10,8 +10,6 @@ import "./index.css";
 const clerkPubKey =
   (import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
     import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) as string;
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL as string | undefined;
-
 if (!clerkPubKey) {
   throw new Error(
     "Missing Clerk publishable key. Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY or VITE_CLERK_PUBLISHABLE_KEY.",
@@ -69,7 +67,6 @@ function ClerkWithRouter({ children }: { children: React.ReactNode }) {
   return (
     <ClerkProvider
       publishableKey={clerkPubKey}
-      {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
       appearance={appearance}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
