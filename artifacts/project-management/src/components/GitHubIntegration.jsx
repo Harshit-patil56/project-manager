@@ -64,17 +64,17 @@ export default function GitHubIntegration({ project }) {
 
             <div className="space-y-2">
                 <label className={labelClasses}>Repository URL</label>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3 mt-2">
                     <input
                         value={githubRepo}
                         onChange={(e) => setGithubRepo(e.target.value)}
                         placeholder="https://github.com/owner/repo"
-                        className={inputClasses + " flex-1 mt-0"}
+                        className="flex-1 px-3 py-2 rounded border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="px-4 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition disabled:opacity-60 whitespace-nowrap"
+                        className="flex-shrink-0 px-5 py-2 text-sm rounded bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:opacity-90 transition disabled:opacity-60 whitespace-nowrap"
                     >
                         {isSaving ? "Saving..." : "Save"}
                     </button>
