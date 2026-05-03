@@ -63,19 +63,7 @@ function UserAvatar({ user, size = 6 }) {
     );
 }
 
-function renderCommentWithMentions(content) {
-    const parts = content.split(/(@[\w\s]+)/g);
-    return parts.map((part, i) => {
-        if (part.startsWith("@")) {
-            return (
-                <span key={i} className="text-blue-600 dark:text-blue-400 font-medium">
-                    {part}
-                </span>
-            );
-        }
-        return part;
-    });
-}
+
 
 const TaskDetails = () => {
     const [searchParams] = useSearchParams();
@@ -128,6 +116,38 @@ const TaskDetails = () => {
         return { id: m.publicUserData?.userId, name, email: m.publicUserData?.identifier, image: m.publicUserData?.imageUrl };
     });
 
+    const renderCommentWithMentions = (content) => {
+        if (!content) return null;
+        const names = teamMembers.map(m => m.name).filter(Boolean);
+        if (names.length === 0) {
+            // Fallback to simple regex if no names yet
+            const parts = content.split(/(@[A-Z][a-z]+(?:\s[A-Z][a-z]+)*)/g);
+            return parts.map((part, i) => {
+                if (part.startsWith("@")) {
+                    return <span key={i} className="text-blue-600 dark:text-blue-400 font-medium">{part}</span>;
+                }
+                return part;
+            });
+        }
+
+        // Sort names by length descending to match longest first
+        const sortedNames = [...names].sort((a, b) => b.length - a.length);
+        const escapedNames = sortedNames.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+        const regex = new RegExp(`(@(?:${escapedNames}))`, 'g');
+
+        const parts = content.split(regex);
+        return parts.map((part, i) => {
+            if (part.startsWith("@") && names.some(n => `@${n}` === part)) {
+                return (
+                    <span key={i} className="text-blue-600 dark:text-blue-400 font-medium">
+                        {part}
+                    </span>
+                );
+            }
+            return part;
+        });
+    };
+
     const fetchComments = async () => {
         if (!taskId) return;
         try { setComments(await apiFetch(`/api/tasks/${taskId}/comments`) || []); } catch { }
@@ -171,7 +191,8 @@ const TaskDetails = () => {
     useEffect(() => { if (!taskId) return; apiFetch(`/api/tasks/${taskId}/commits`).then((d) => setCommits(d || [])).catch(() => {}); }, [taskId]);
     useEffect(() => {
         if (!taskId) return;
-        const es = new EventSource(`/api/tasks/${taskId}/commit-events`);
+        const baseUrl = import.meta.env.VITE_API_URL || '';
+        const es = new EventSource(`${baseUrl}/api/tasks/${taskId}/commit-events`);
         es.onmessage = (e) => { try { setCommits((p) => [JSON.parse(e.data), ...p]); } catch { } if (activeTab !== "development") setHasNewCommit(true); };
         return () => es.close();
     }, [taskId, activeTab]);

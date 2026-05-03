@@ -11,7 +11,11 @@ export async function apiFetch(path, options = {}) {
     ...(options.headers || {}),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(path, { ...options, headers });
+  
+  const baseUrl = import.meta.env.VITE_API_URL || '';
+  const fullPath = path.startsWith('http') ? path : `${baseUrl}${path}`;
+  
+  const res = await fetch(fullPath, { ...options, headers });
   if (!res.ok) {
     let errMsg = `HTTP ${res.status}`;
     try {

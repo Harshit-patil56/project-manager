@@ -4,10 +4,12 @@ import { Plus, Search, FolderOpen } from "lucide-react";
 import ProjectCard from "../components/ProjectCard";
 import CreateProjectDialog from "../components/CreateProjectDialog";
 
+const EMPTY_ARRAY = [];
+
 export default function Projects() {
     
     const projects = useSelector(
-        (state) => state?.workspace?.currentWorkspace?.projects || []
+        (state) => state?.workspace?.currentWorkspace?.projects || EMPTY_ARRAY
     );
 
     const [filteredProjects, setFilteredProjects] = useState([]);

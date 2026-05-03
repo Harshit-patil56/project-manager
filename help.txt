@@ -1,0 +1,23 @@
+Project Startup Instructions
+
+## Prerequisites
+Ensure you have `pnpm` installed since this project uses it as the package manager.
+
+## Running the Backend (API Server)
+1. Open a new terminal.
+2. Navigate to the backend directory:
+   cd artifacts/api-server
+3. Start the backend in development mode:
+   pnpm start 
+
+## Running the Frontend (Project Management UI)
+1. Open a new terminal.
+2. Navigate to the frontend directory:
+   cd artifacts/project-management
+3. Start the frontend development server:
+   pnpm run dev
+
+## Running the Entire Workspace (Alternative)
+Since this is a monorepo, you can also run both simultaneously from the root directory if supported by your setup, or individually using the workspace commands:
+- Frontend: pnpm --filter @workspace/project-management dev
+- Backend: pnpm --filter @workspace/api-server dev

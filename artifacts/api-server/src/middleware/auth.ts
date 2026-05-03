@@ -12,7 +12,10 @@ const secretKey = process.env.CLERK_SECRET_KEY;
 
 // Build authorized parties from Replit domain env vars so the JWT azp check passes
 function buildAuthorizedParties(): string[] {
-  const parties = new Set<string>(["http://localhost", "http://localhost:25074"]);
+  const parties = new Set<string>(["http://localhost", "http://localhost:25074", "http://localhost:25075", "http://localhost:3000", "http://localhost:5173"]);
+  // Allow additional dev origins via DEV_ALLOWED_ORIGINS (comma-separated)
+  const devAllowed = (process.env.DEV_ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  for (const d of devAllowed) parties.add(d);
   const domains = [
     process.env.REPLIT_DOMAINS ?? "",
     process.env.REPLIT_DEV_DOMAIN ?? "",
@@ -54,6 +57,7 @@ export async function authenticate(
     next();
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    console.error("Token verification failed:", message, "authorizedParties:", authorizedParties);
     req.log?.warn({ err, detail: message }, "Token verification failed");
     res.status(401).json({ error: "Invalid token", detail: message });
   }

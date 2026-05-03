@@ -4,6 +4,13 @@ import { apiFetch } from "../lib/api";
 export const fetchWorkspaces = createAsyncThunk(
   "workspace/fetchAll",
   async () => {
+    // In development or local setups, sync workspaces with Clerk first since webhooks may not reach us
+    try {
+      await apiFetch("/api/workspaces/sync");
+    } catch (e) {
+      // Ignore sync errors, might be in prod where endpoint is disabled
+    }
+
     const workspaces = await apiFetch("/api/workspaces");
     if (!workspaces || workspaces.length === 0) return [];
     const populated = await Promise.all(

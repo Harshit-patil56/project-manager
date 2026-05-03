@@ -3,6 +3,7 @@ import { BellIcon, CheckCheckIcon, CheckSquareIcon, MessageCircleIcon, FlagIcon,
 import { apiFetch } from '../lib/api'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
+import { useAuth } from '@clerk/react'
 
 const TYPE_ICONS = {
     TASK_ASSIGNED: CheckSquareIcon,
@@ -27,13 +28,15 @@ export default function NotificationBell() {
     const [loadingMore, setLoadingMore] = useState(false)
     const containerRef = useRef(null)
     const listRef = useRef(null)
+    const esRef = useRef(null)
     const navigate = useNavigate()
+    const { getToken, isSignedIn } = useAuth()
 
     const unreadCount = notifications.filter(n => !n.read).length
 
     const fetchNotifications = useCallback(async (newOffset = 0) => {
         try {
-            setLoading(true)
+            if (newOffset === 0) setLoading(true)
             const data = await apiFetch(`/api/notifications?offset=${newOffset}&limit=15`)
             const notifs = data.notifications || data || []
             if (newOffset === 0) {
@@ -43,10 +46,10 @@ export default function NotificationBell() {
             }
             setOffset(newOffset + (notifs?.length || 0))
             setHasMore(data.hasMore ?? false)
-            setLoading(false)
-        } catch (e) { 
+        } catch (e) {
             console.error('Notification fetch error:', e)
-            setLoading(false) 
+        } finally {
+            setLoading(false)
         }
     }, [])
 
@@ -59,10 +62,10 @@ export default function NotificationBell() {
             setNotifications(prev => [...prev, ...(Array.isArray(notifs) ? notifs : [])])
             setOffset(offset + (notifs?.length || 0))
             setHasMore(data.hasMore ?? false)
-            setLoadingMore(false)
-        } catch (e) { 
+        } catch (e) {
             console.error('Load more error:', e)
-            setLoadingMore(false) 
+        } finally {
+            setLoadingMore(false)
         }
     }, [offset, hasMore, loadingMore])
 
@@ -74,32 +77,67 @@ export default function NotificationBell() {
         }
     }, [hasMore, loadingMore, loadMore])
 
+    // Fetch notifications on mount
     useEffect(() => {
-        // Initial fetch on mount
-        fetchNotifications(0)
-    }, [])
+        if (isSignedIn) fetchNotifications(0)
+    }, [isSignedIn, fetchNotifications])
 
+    // Persistent SSE connection — opened on mount, keeps badge live even when panel is closed
     useEffect(() => {
-        // SSE connection for real-time (only when open)
-        if (!open) return
-        
-        const es = new EventSource('/api/notifications/events')
-        es.onmessage = (e) => {
+        if (!isSignedIn) return
+
+        let es = null
+        let retryTimeout = null
+        let retryDelay = 3000
+
+        const connect = async () => {
             try {
-                const newNotif = JSON.parse(e.data)
-                setNotifications(prev => [newNotif, ...prev])
-            } catch { }
-        }
-        es.onerror = () => es.close()
-        return () => es.close()
-    }, [open])
+                const token = await getToken()
+                if (!token) return
 
-    useEffect(() => {
-        if (open) {
-            fetchNotifications(0)
-        }
-    }, [open])
+                const baseUrl = import.meta.env.VITE_API_URL || '';
+                // EventSource cannot send Authorization headers, so pass token as query param
+                es = new EventSource(`${baseUrl}/api/notifications/events?token=${encodeURIComponent(token)}`)
+                esRef.current = es
 
+                es.onopen = () => { retryDelay = 3000 }
+
+                es.onmessage = (e) => {
+                    try {
+                        const newNotif = JSON.parse(e.data)
+                        setNotifications(prev => {
+                            if (prev.some(n => n.id === newNotif.id)) return prev
+                            return [newNotif, ...prev]
+                        })
+                    } catch { }
+                }
+
+                es.onerror = () => {
+                    es.close()
+                    esRef.current = null
+                    // Exponential backoff reconnect
+                    retryTimeout = setTimeout(() => {
+                        retryDelay = Math.min(retryDelay * 2, 30000)
+                        connect()
+                    }, retryDelay)
+                }
+            } catch (err) {
+                console.error('SSE connect error:', err)
+            }
+        }
+
+        connect()
+
+        return () => {
+            clearTimeout(retryTimeout)
+            if (esRef.current) {
+                esRef.current.close()
+                esRef.current = null
+            }
+        }
+    }, [isSignedIn, getToken])
+
+    // Click outside to close
     useEffect(() => {
         function handleClick(e) {
             if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
@@ -131,12 +169,13 @@ export default function NotificationBell() {
     return (
         <div className="relative" ref={containerRef}>
             <button
+                id="notification-bell-btn"
                 onClick={() => setOpen(o => !o)}
                 className="relative size-8 flex items-center justify-center bg-white dark:bg-zinc-800 shadow rounded-lg transition hover:scale-105 active:scale-95"
             >
                 <BellIcon className="size-4 text-gray-700 dark:text-gray-200" />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 size-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none">
+                    <span className="absolute -top-1 -right-1 size-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold leading-none animate-pulse">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
@@ -159,7 +198,11 @@ export default function NotificationBell() {
 
                     {/* List */}
                     <div ref={listRef} className="max-h-96 overflow-y-auto" onScroll={handleScroll}>
-                        {notifications.length === 0 && !loading ? (
+                        {loading ? (
+                            <div className="py-6 flex justify-center">
+                                <div className="size-5 border-2 border-zinc-200 dark:border-zinc-700 border-t-blue-500 rounded-full animate-spin" />
+                            </div>
+                        ) : notifications.length === 0 ? (
                             <div className="py-10 text-center">
                                 <BellIcon className="size-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
                                 <p className="text-sm text-zinc-400 dark:text-zinc-500">All caught up!</p>

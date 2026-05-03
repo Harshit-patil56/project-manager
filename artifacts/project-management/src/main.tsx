@@ -7,12 +7,16 @@ import { store } from "./app/store.js";
 import App from "./App.jsx";
 import "./index.css";
 
-const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+const clerkPubKey =
+  (import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ??
+    import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) as string;
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL as string | undefined;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 if (!clerkPubKey) {
-  throw new Error("Missing VITE_CLERK_PUBLISHABLE_KEY");
+  throw new Error(
+    "Missing Clerk publishable key. Set NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY or VITE_CLERK_PUBLISHABLE_KEY.",
+  );
 }
 
 const sharedVariables = {

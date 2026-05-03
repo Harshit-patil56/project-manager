@@ -73,22 +73,55 @@ router.patch("/notifications/:notificationId/read", authenticate, async (req, re
 });
 
 // SSE endpoint for real-time notifications
+// Uses ?token= query param because browser EventSource cannot send custom headers
 const subscribers: Map<string, (data: any) => void> = new Map();
 
-router.get("/notifications/events", authenticate, async (req, res): Promise<void> => {
-  const userId = (req as AuthedRequest).userId;
+router.get("/notifications/events", async (req, res): Promise<void> => {
+  // Accept token from either Authorization header or ?token= query param
+  const authHeader = req.headers.authorization;
+  const headerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const queryToken = req.query.token as string | undefined;
+  const token = headerToken || queryToken;
+
+  if (!token) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  // Verify token
+  let userId: string;
+  try {
+    const { verifyToken } = await import("@clerk/backend");
+    const secretKey = process.env.CLERK_SECRET_KEY!;
+    const payload = await verifyToken(token, { secretKey });
+    userId = payload.sub;
+  } catch {
+    res.status(401).json({ error: "Invalid token" });
+    return;
+  }
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
 
   const send = (data: any) => {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   };
 
+  // Send a heartbeat immediately so the client knows it's connected
+  res.write(`:ok\n\n`);
+
   subscribers.set(userId, send);
 
+  // Heartbeat every 25s to keep connection alive through proxies
+  const heartbeat = setInterval(() => {
+    res.write(`:heartbeat\n\n`);
+  }, 25000);
+
   req.on("close", () => {
+    clearInterval(heartbeat);
     subscribers.delete(userId);
     res.end();
   });

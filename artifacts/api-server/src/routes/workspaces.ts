@@ -4,8 +4,80 @@ import { db } from "@workspace/db";
 import { workspacesTable, workspaceMembersTable, usersTable } from "@workspace/db/schema";
 import { eq, and, inArray, isNull } from "drizzle-orm";
 import { authenticate, requireWorkspaceMember, type AuthedRequest } from "../middleware/auth.js";
+import { createNotification } from "../lib/notifications.js";
 
 const router = Router();
+
+router.get("/workspaces/sync", async (req, res): Promise<void> => {
+  if (process.env.NODE_ENV !== "development") {
+    res.status(403).json({ error: "Only available in development" });
+    return;
+  }
+
+  try {
+    const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    
+    // 1. Fetch users
+    const users = await clerk.users.getUserList();
+    for (const user of users.data) {
+      const email = user.emailAddresses[0]?.emailAddress ?? "";
+      const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || email || "Unknown";
+      await db
+        .insert(usersTable)
+        .values({
+          id: user.id,
+          name,
+          email,
+          image: user.imageUrl,
+          updatedAt: new Date(user.updatedAt),
+        })
+        .onConflictDoUpdate({
+          target: usersTable.id,
+          set: { name, email, image: user.imageUrl, updatedAt: new Date() },
+        });
+    }
+
+    // 2. Fetch orgs
+    const orgs = await clerk.organizations.getOrganizationList();
+    for (const org of orgs.data) {
+      await db
+        .insert(workspacesTable)
+        .values({
+          id: org.id,
+          name: org.name,
+          slug: org.slug || org.id,
+          imageUrl: org.imageUrl,
+          ownerId: org.createdBy || "",
+          settings: {},
+          updatedAt: new Date(org.updatedAt),
+        })
+        .onConflictDoUpdate({
+          target: workspacesTable.id,
+          set: { name: org.name, slug: org.slug || org.id, imageUrl: org.imageUrl, updatedAt: new Date() },
+        });
+
+      // 3. Memberships
+      const memberships = await clerk.organizations.getOrganizationMembershipList({ organizationId: org.id });
+      for (const mem of memberships.data) {
+        const role = mem.role === "org:admin" ? "ADMIN" : "MEMBER";
+        await db
+          .insert(workspaceMembersTable)
+          .values({
+            id: mem.id,
+            userId: mem.publicUserData?.userId || "",
+            workspaceId: org.id,
+            role,
+          })
+          .onConflictDoNothing();
+      }
+    }
+
+    res.json({ message: "Sync complete", organizations: orgs.data.length });
+  } catch (err) {
+    console.error("Sync failed:", err);
+    res.status(500).json({ error: "Sync failed", detail: String(err) });
+  }
+});
 
 router.get("/workspaces", authenticate, async (req, res): Promise<void> => {
   const userId = (req as AuthedRequest).userId;
@@ -115,7 +187,28 @@ router.post(
         emailAddress,
         role: role || "org:member",
         inviterUserId: (req as AuthedRequest).userId,
+        redirectUrl: req.headers.origin ? `${req.headers.origin}/` : "http://localhost:25075/",
       });
+
+      // Notify the user if they already exist in our database
+      const invitedUsers = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, emailAddress))
+        .limit(1);
+
+      if (invitedUsers.length > 0) {
+        const ws = await db.select().from(workspacesTable).where(eq(workspacesTable.id, workspaceId)).limit(1);
+        const wsName = ws.length > 0 ? ws[0].name : "a workspace";
+        
+        await createNotification({
+          userId: invitedUsers[0].id,
+          type: "WORKSPACE_INVITE",
+          title: "Workspace Invitation",
+          body: `You have been invited to join the ${wsName} workspace.`,
+        });
+      }
+
       res.json({ message: "Invitation sent" });
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[]; message?: string };

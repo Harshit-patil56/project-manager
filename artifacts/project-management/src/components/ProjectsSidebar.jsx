@@ -3,6 +3,8 @@ import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { ChevronRightIcon, SettingsIcon, KanbanIcon, ChartColumnIcon, CalendarIcon, ArrowRightIcon } from 'lucide-react';
 import { useSelector } from 'react-redux';
 
+const EMPTY_ARRAY = [];
+
 const ProjectSidebar = () => {
 
     const location = useLocation();
@@ -11,7 +13,7 @@ const ProjectSidebar = () => {
     const [searchParams] = useSearchParams();
 
     const projects = useSelector(
-        (state) => state?.workspace?.currentWorkspace?.projects || []
+        (state) => state?.workspace?.currentWorkspace?.projects || EMPTY_ARRAY
     );
 
     const getProjectSubItems = (projectId) => [

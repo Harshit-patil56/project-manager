@@ -3,6 +3,12 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import fs from "fs";
+
+if (fs.existsSync(".env.local")) {
+  process.loadEnvFile(".env.local");
+}
+
 
 const rawPort = process.env.PORT;
 
@@ -28,6 +34,7 @@ if (!basePath) {
 
 export default defineConfig({
   base: basePath,
+  envPrefix: ["VITE_", "NEXT_PUBLIC_"],
   plugins: [
     react(),
     tailwindcss(),
@@ -65,6 +72,13 @@ export default defineConfig({
     allowedHosts: true,
     fs: {
       strict: true,
+    },
+    proxy: {
+      '/api': {
+        target: process.env.VITE_API_URL || process.env.API_URL || 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   preview: {
