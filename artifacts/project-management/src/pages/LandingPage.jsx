@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 const LandingPage = () => {
   const navigate = useNavigate();
 
@@ -14,13 +16,13 @@ const LandingPage = () => {
       </div>
       <div className="flex gap-3">
         <button
-          onClick={() => navigate("/sign-in")}
+          onClick={() => navigate(`${basePath}/sign-in`)}
           className="rounded-lg bg-blue-500 px-6 py-2.5 text-sm font-medium text-white shadow hover:bg-blue-600 transition-colors"
         >
           Sign In
         </button>
         <button
-          onClick={() => navigate("/sign-up")}
+          onClick={() => navigate(`${basePath}/sign-up`)}
           className="rounded-lg border border-gray-200 bg-white px-6 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
         >
           Create Account

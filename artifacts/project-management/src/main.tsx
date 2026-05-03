@@ -1,5 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { HashRouter, useNavigate } from "react-router-dom";
+import { BrowserRouter, useNavigate } from "react-router-dom";
 import { ClerkProvider } from "@clerk/react";
 import { dark } from "@clerk/themes";
 import { Provider, useSelector } from "react-redux";
@@ -74,9 +74,9 @@ function ClerkWithRouter({ children }: { children: React.ReactNode }) {
       publishableKey={clerkPubKey}
       {...(clerkProxyUrl ? { proxyUrl: clerkProxyUrl } : {})}
       appearance={appearance}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignOutUrl="/"
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      afterSignOutUrl={basePath || "/"}
       routerPush={(to) => navigate(to)}
       routerReplace={(to) => navigate(to, { replace: true })}
     >
@@ -86,11 +86,11 @@ function ClerkWithRouter({ children }: { children: React.ReactNode }) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <HashRouter>
+  <BrowserRouter basename={basePath || undefined}>
     <Provider store={store}>
       <ClerkWithRouter>
         <App />
       </ClerkWithRouter>
     </Provider>
-  </HashRouter>,
+  </BrowserRouter>,
 );
