@@ -5,6 +5,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateTaskThunk, deleteTasksThunk } from "../features/workspaceSlice";
 import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
+import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 const typeIcons = {
     BUG: { icon: Bug, color: "text-red-600 dark:text-red-400" },
@@ -24,6 +25,8 @@ const ProjectTasks = ({ tasks }) => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [selectedTasks, setSelectedTasks] = useState([]);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const [filters, setFilters] = useState({ status: "", type: "", priority: "", assignee: "" });
 
@@ -49,32 +52,28 @@ const ProjectTasks = ({ tasks }) => {
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleStatusChange = async (task, newStatus) => {
-        const loadingId = toast.loading("Updating status...");
-        try {
-            await dispatch(updateTaskThunk({ taskId: task.id, status: newStatus })).unwrap();
-            toast.dismiss(loadingId);
-            toast.success("Task status updated");
-        } catch (error) {
-            toast.dismiss(loadingId);
-            toast.error(error?.message || "Failed to update status");
-        }
-    };
-
     const handleDelete = async () => {
-        if (!window.confirm("Are you sure you want to delete the selected tasks?")) return;
         const projectId = tasks.find((t) => selectedTasks.includes(t.id))?.projectId;
-        const loadingId = toast.loading("Deleting tasks...");
+        setIsDeleting(true);
+        const loadingId = toast.loading("Archiving tasks...");
         try {
             await dispatch(deleteTasksThunk({ taskIds: selectedTasks, projectId })).unwrap();
             setSelectedTasks([]);
+            setShowDeleteConfirm(false);
             toast.dismiss(loadingId);
-            toast.success("Tasks deleted");
+            toast.success("Tasks archived");
         } catch (error) {
             toast.dismiss(loadingId);
-            toast.error(error?.message || "Failed to delete tasks");
+            toast.error(error?.message || "Failed to archive tasks");
+        } finally {
+            setIsDeleting(false);
         }
     };
+
+    const selectedCount = selectedTasks.length;
+    const selectedLabel = selectedCount === 1
+        ? tasks.find((t) => t.id === selectedTasks[0])?.title || "1 task"
+        : `${selectedCount} tasks`;
 
     return (
         <div>
@@ -133,10 +132,10 @@ const ProjectTasks = ({ tasks }) => {
                 {selectedTasks.length > 0 && (
                     <button
                         type="button"
-                        onClick={handleDelete}
+                        onClick={() => setShowDeleteConfirm(true)}
                         className="px-3 py-1 flex items-center gap-2 rounded bg-gradient-to-br from-indigo-400 to-indigo-500 text-zinc-100 dark:text-zinc-200 text-sm transition-colors"
                     >
-                        <Trash className="size-3" /> Delete
+                        <Trash className="size-3" /> Archive ({selectedTasks.length})
                     </button>
                 )}
             </div>
@@ -285,6 +284,14 @@ const ProjectTasks = ({ tasks }) => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmDeleteDialog
+                isOpen={showDeleteConfirm}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={handleDelete}
+                itemName={selectedLabel}
+                isLoading={isDeleting}
+            />
         </div>
     );
 };

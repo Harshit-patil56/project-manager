@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Plus, X, Loader2 } from "lucide-react";
+import { ChevronDown, Check, Plus, X, Loader2, Archive } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { setCurrentWorkspace, fetchWorkspaces } from "../features/workspaceSlice";
+import { setCurrentWorkspace, fetchWorkspaces, archiveWorkspaceThunk } from "../features/workspaceSlice";
 import { useNavigate } from "react-router-dom";
-import { useOrganizationList } from "@clerk/react";
+import { useOrganizationList, useAuth } from "@clerk/react";
 import { assets } from "../assets/assets";
 import toast from "react-hot-toast";
+import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 function WorkspaceDropdown() {
     const { workspaces, currentWorkspace } = useSelector((state) => state.workspace);
@@ -13,10 +14,16 @@ function WorkspaceDropdown() {
     const [showCreate, setShowCreate] = useState(false);
     const [newName, setNewName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
+    const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+    const [isArchiving, setIsArchiving] = useState(false);
     const dropdownRef = useRef(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { setActive, createOrganization } = useOrganizationList();
+    const { userId } = useAuth();
+
+    const currentUserRole = currentWorkspace?.members?.find((m) => m.userId === userId)?.role;
+    const isAdmin = currentUserRole === "ADMIN";
 
     const onSelectWorkspace = (workspaceId) => {
         dispatch(setCurrentWorkspace(workspaceId));
@@ -35,7 +42,6 @@ function WorkspaceDropdown() {
         setIsCreating(true);
         try {
             const org = await createOrganization({ name: newName.trim() });
-            // Give the webhook a moment to process before refetching
             await new Promise((r) => setTimeout(r, 2000));
             await dispatch(fetchWorkspaces()).unwrap();
             if (org?.id) {
@@ -51,6 +57,24 @@ function WorkspaceDropdown() {
             toast.error(err?.message || "Failed to create workspace");
         } finally {
             setIsCreating(false);
+        }
+    };
+
+    const handleArchiveWorkspace = async () => {
+        if (!currentWorkspace) return;
+        setIsArchiving(true);
+        const loadingId = toast.loading("Archiving workspace...");
+        try {
+            await dispatch(archiveWorkspaceThunk(currentWorkspace.id)).unwrap();
+            toast.dismiss(loadingId);
+            toast.success("Workspace archived");
+            setShowArchiveConfirm(false);
+            navigate("/dashboard");
+        } catch (err) {
+            toast.dismiss(loadingId);
+            toast.error(err?.message || "Failed to archive workspace");
+        } finally {
+            setIsArchiving(false);
         }
     };
 
@@ -134,6 +158,14 @@ function WorkspaceDropdown() {
                             >
                                 <Plus className="w-4 h-4" /> Create Workspace
                             </button>
+                            {isAdmin && currentWorkspace && (
+                                <button
+                                    onClick={() => { setShowArchiveConfirm(true); setIsOpen(false); }}
+                                    className="flex items-center text-xs gap-2 my-1 w-full px-2 py-1.5 rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                >
+                                    <Archive className="w-4 h-4" /> Archive Workspace
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}
@@ -190,6 +222,14 @@ function WorkspaceDropdown() {
                     </div>
                 </div>
             )}
+
+            <ConfirmDeleteDialog
+                isOpen={showArchiveConfirm}
+                onClose={() => setShowArchiveConfirm(false)}
+                onConfirm={handleArchiveWorkspace}
+                itemName={currentWorkspace?.name}
+                isLoading={isArchiving}
+            />
         </>
     );
 }

@@ -7,7 +7,7 @@ import {
   usersTable,
   commentsTable,
 } from "@workspace/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 import { authenticate, type AuthedRequest } from "../middleware/auth.js";
 import { randomUUID } from "crypto";
 
@@ -87,7 +87,7 @@ router.get(
     const tasks = await db
       .select()
       .from(tasksTable)
-      .where(eq(tasksTable.projectId, projectId));
+      .where(and(eq(tasksTable.projectId, projectId), isNull(tasksTable.deletedAt)));
 
     const assigneeIds = [...new Set(tasks.map((t) => t.assigneeId))];
     const assignees =
@@ -298,13 +298,8 @@ router.delete(
       return;
     }
 
-    if (membership.role !== "ADMIN" && task.assigneeId !== userId && project.teamLead !== userId) {
-      res.status(403).json({ error: "Only the assignee, team lead, or admin can delete this task" });
-      return;
-    }
-
-    await db.delete(tasksTable).where(eq(tasksTable.id, taskId));
-    res.json({ message: "Task deleted" });
+    await db.update(tasksTable).set({ deletedAt: new Date() }).where(eq(tasksTable.id, taskId));
+    res.json({ message: "Task archived" });
   },
 );
 

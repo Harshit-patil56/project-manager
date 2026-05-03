@@ -8,7 +8,7 @@ import {
   tasksTable,
   commentsTable,
 } from "@workspace/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 import { authenticate, requireWorkspaceMember, type AuthedRequest } from "../middleware/auth.js";
 import { randomUUID } from "crypto";
 
@@ -23,7 +23,7 @@ router.get(
     const projects = await db
       .select()
       .from(projectsTable)
-      .where(eq(projectsTable.workspaceId, workspaceId));
+      .where(and(eq(projectsTable.workspaceId, workspaceId), isNull(projectsTable.deletedAt)));
 
     const result = await Promise.all(
       projects.map(async (p) => {
@@ -316,13 +316,8 @@ router.delete(
       return;
     }
 
-    if (membership[0].role !== "ADMIN" && project.teamLead !== userId) {
-      res.status(403).json({ error: "Only the team lead or an admin can delete this project" });
-      return;
-    }
-
-    await db.delete(projectsTable).where(eq(projectsTable.id, projectId));
-    res.json({ message: "Project deleted" });
+    await db.update(projectsTable).set({ deletedAt: new Date() }).where(eq(projectsTable.id, projectId));
+    res.json({ message: "Project archived" });
   },
 );
 

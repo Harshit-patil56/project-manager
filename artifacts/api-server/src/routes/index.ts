@@ -6,6 +6,7 @@ import workspacesRouter from "./workspaces";
 import projectsRouter from "./projects";
 import tasksRouter from "./tasks";
 import commentsRouter from "./comments";
+import trashRouter from "./trash";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(workspacesRouter);
 router.use(projectsRouter);
 router.use(tasksRouter);
 router.use(commentsRouter);
+router.use(trashRouter);
 
 export default router;

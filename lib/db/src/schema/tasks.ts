@@ -26,6 +26,7 @@ export const tasksTable = pgTable("tasks", {
   dueDate: timestamp("due_date").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const insertTaskSchema = createInsertSchema(tasksTable);

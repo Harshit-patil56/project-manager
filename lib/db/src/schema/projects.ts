@@ -27,6 +27,7 @@ export const projectsTable = pgTable("projects", {
   progress: integer("progress").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
 });
 
 export const projectMembersTable = pgTable(

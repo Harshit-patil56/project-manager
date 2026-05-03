@@ -84,6 +84,22 @@ export const addProjectMemberThunk = createAsyncThunk(
   }
 );
 
+export const archiveWorkspaceThunk = createAsyncThunk(
+  "workspace/archiveWorkspace",
+  async (workspaceId) => {
+    await apiFetch(`/api/workspaces/${workspaceId}`, { method: "DELETE" });
+    return workspaceId;
+  }
+);
+
+export const archiveProjectThunk = createAsyncThunk(
+  "workspace/archiveProject",
+  async ({ projectId, workspaceId }) => {
+    await apiFetch(`/api/projects/${projectId}`, { method: "DELETE" });
+    return { projectId, workspaceId };
+  }
+);
+
 export const addCommentThunk = createAsyncThunk(
   "workspace/addComment",
   async ({ taskId, projectId, content }) => {
@@ -247,6 +263,33 @@ const workspaceSlice = createSlice({
           ...ws,
           projects: addMember(ws.projects),
         }));
+      })
+
+      .addCase(archiveWorkspaceThunk.fulfilled, (state, action) => {
+        const workspaceId = action.payload;
+        state.workspaces = state.workspaces.filter((ws) => ws.id !== workspaceId);
+        if (state.currentWorkspace?.id === workspaceId) {
+          state.currentWorkspace = state.workspaces[0] || null;
+          if (state.currentWorkspace) {
+            localStorage.setItem("currentWorkspaceId", state.currentWorkspace.id);
+          } else {
+            localStorage.removeItem("currentWorkspaceId");
+          }
+        }
+      })
+
+      .addCase(archiveProjectThunk.fulfilled, (state, action) => {
+        const { projectId, workspaceId } = action.payload;
+        const removeProject = (projects) => (projects || []).filter((p) => p.id !== projectId);
+        state.workspaces = state.workspaces.map((ws) =>
+          ws.id === workspaceId ? { ...ws, projects: removeProject(ws.projects) } : ws
+        );
+        if (state.currentWorkspace?.id === workspaceId) {
+          state.currentWorkspace = {
+            ...state.currentWorkspace,
+            projects: removeProject(state.currentWorkspace.projects),
+          };
+        }
       })
 
       .addCase(addCommentThunk.fulfilled, (state, action) => {

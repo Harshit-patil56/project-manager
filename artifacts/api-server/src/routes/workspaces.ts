@@ -2,7 +2,7 @@ import { Router } from "express";
 import { createClerkClient } from "@clerk/backend";
 import { db } from "@workspace/db";
 import { workspacesTable, workspaceMembersTable, usersTable } from "@workspace/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 import { authenticate, requireWorkspaceMember, type AuthedRequest } from "../middleware/auth.js";
 
 const router = Router();
@@ -24,7 +24,7 @@ router.get("/workspaces", authenticate, async (req, res): Promise<void> => {
   const workspaces = await db
     .select()
     .from(workspacesTable)
-    .where(inArray(workspacesTable.id, workspaceIds));
+    .where(and(inArray(workspacesTable.id, workspaceIds), isNull(workspacesTable.deletedAt)));
 
   res.json(workspaces);
 });
@@ -123,6 +123,29 @@ router.post(
         error: clerkErr.errors?.[0]?.message || clerkErr.message || "Failed to send invitation",
       });
     }
+  },
+);
+
+router.delete(
+  "/workspaces/:workspaceId",
+  authenticate,
+  async (req, res): Promise<void> => {
+    const userId = (req as AuthedRequest).userId;
+    const { workspaceId } = req.params;
+
+    const membership = await db
+      .select()
+      .from(workspaceMembersTable)
+      .where(and(eq(workspaceMembersTable.userId, userId), eq(workspaceMembersTable.workspaceId, workspaceId)))
+      .limit(1);
+
+    if (!membership.length || membership[0].role !== "ADMIN") {
+      res.status(403).json({ error: "Only admins can archive a workspace" });
+      return;
+    }
+
+    await db.update(workspacesTable).set({ deletedAt: new Date() }).where(eq(workspacesTable.id, workspaceId));
+    res.json({ message: "Workspace archived" });
   },
 );
 
