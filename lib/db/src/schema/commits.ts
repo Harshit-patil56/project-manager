@@ -12,6 +12,7 @@ export const commitsTable = pgTable("commits", {
   message: text("message").notNull(),
   author: text("author").notNull(),
   url: text("url").notNull(),
+  branch: text("branch"),
   pushedAt: timestamp("pushed_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

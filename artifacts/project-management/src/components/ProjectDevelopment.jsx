@@ -48,6 +48,11 @@ export default function ProjectDevelopment({ project, tasks }) {
                         <code className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-mono text-xs text-zinc-600 dark:text-zinc-400">
                             {commit.sha}
                         </code>
+                        {commit.branch && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 font-mono text-xs">
+                                {commit.branch}
+                            </span>
+                        )}
                         <span className="text-xs text-zinc-500 dark:text-zinc-400">{commit.author}</span>
                         <span className="text-xs text-zinc-400 dark:text-zinc-500">·</span>
                         <span className="text-xs text-zinc-400 dark:text-zinc-500">

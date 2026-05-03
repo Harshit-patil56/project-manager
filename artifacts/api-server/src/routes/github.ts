@@ -69,8 +69,10 @@ router.post("/github/webhook", async (req, res): Promise<void> => {
   if (event !== "push") { res.json({ message: "ignored" }); return; }
 
   const payload = JSON.parse(rawBody.toString("utf-8")) as {
+    ref?: string;
     commits?: { id: string; message: string; author: { name: string }; url: string; timestamp: string }[];
   };
+  const branch = payload.ref?.replace("refs/heads/", "") ?? null;
 
   const commits = payload.commits ?? [];
   const slug = matchedProject.slug.toUpperCase();
@@ -98,6 +100,7 @@ router.post("/github/webhook", async (req, res): Promise<void> => {
         message: commit.message,
         author: commit.author.name,
         url: commit.url,
+        branch,
         pushedAt: new Date(commit.timestamp),
       }).returning();
 

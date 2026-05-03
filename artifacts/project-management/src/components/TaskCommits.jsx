@@ -74,10 +74,15 @@ export default function TaskCommits({ taskId }) {
                                         </span>
                                     )}
                                 </p>
-                                <div className="flex items-center gap-2 mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-zinc-500 dark:text-zinc-400">
                                     <code className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-mono">
                                         {commit.sha}
                                     </code>
+                                    {commit.branch && (
+                                        <span className="px-1.5 py-0.5 rounded-full bg-violet-100 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 font-mono">
+                                            {commit.branch}
+                                        </span>
+                                    )}
                                     <span>{commit.author}</span>
                                     <span>·</span>
                                     <span>{formatDistanceToNow(new Date(commit.pushedAt), { addSuffix: true })}</span>
