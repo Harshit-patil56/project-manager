@@ -1,15 +1,24 @@
 import { useState } from "react";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { format } from "date-fns";
 import { createTaskThunk } from "../features/workspaceSlice";
 import toast from "react-hot-toast";
+import { useOrganization } from "@clerk/react";
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
     const dispatch = useDispatch();
-    const currentWorkspace = useSelector((state) => state.workspace?.currentWorkspace || null);
-    const project = currentWorkspace?.projects.find((p) => p.id === projectId);
-    const teamMembers = project?.members || [];
+    const { memberships } = useOrganization({ memberships: {} });
+    const teamMembers = (memberships?.data ?? []).map((m) => {
+        const firstName = m.publicUserData?.firstName ?? "";
+        const lastName = m.publicUserData?.lastName ?? "";
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const email = m.publicUserData?.identifier ?? "";
+        return {
+            id: m.publicUserData?.userId,
+            name: fullName || email || "Unknown",
+        };
+    });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -122,8 +131,8 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                             >
                                 <option value="">Select assignee</option>
                                 {teamMembers.map((member) => (
-                                    <option key={member?.user?.id} value={member?.user?.id}>
-                                        {member?.user?.name || member?.user?.email}
+                                    <option key={member.id} value={member.id}>
+                                        {member.name}
                                     </option>
                                 ))}
                             </select>
