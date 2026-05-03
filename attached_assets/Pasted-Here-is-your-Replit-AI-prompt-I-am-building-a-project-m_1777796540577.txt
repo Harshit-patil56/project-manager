@@ -1,0 +1,29 @@
+Here is your Replit AI prompt:
+
+---
+
+I am building a project management web app. I want to add a GitHub commit integration feature. Here is everything you need to understand the feature fully.
+
+**What the feature does**
+
+When a developer makes a commit on GitHub and includes a task key in the commit message (for example `TEST-1: added login page`), the app automatically detects that commit, links it to the correct task, and displays it inside the task detail page in real time without any page reload.
+
+**How task keys work**
+
+Every project in the app has a short unique slug of maximum 6 uppercase letters. This slug is auto-suggested from the project name but the user can edit it. For example a project called "Test" gets the slug `TEST`. Every task inside that project gets a human readable key combining the slug and an auto incrementing number, for example `TEST-1`, `TEST-2`, `TEST-3`. Developers type this key inside their git commit messages to link commits to tasks.
+
+**How the GitHub connection works**
+
+The connection is configured per project, not per workspace. Inside the existing Project Settings page there is a new GitHub Integration section. The user pastes their GitHub repository URL, and the app generates a webhook secret for them. The user then goes to their GitHub repository settings, adds a webhook pointing to the app's webhook endpoint URL, pastes the secret, and sets the event to push only. After this setup, every push to that repository automatically notifies the app.
+
+**What happens when a push is received**
+
+The app receives the push notification from GitHub. It first validates that the request genuinely came from GitHub using the webhook secret. It then scans every commit message in the push for any pattern matching a task key like `TEST-1`. If a match is found, it looks up that task in the database and saves the commit details linked to that task. If no match is found the commit is silently ignored.
+
+**UI structure**
+
+The Project Settings page has a new section called GitHub Integration. It contains a field for the repository URL, a read only field showing the generated webhook secret with a copy button, and a instructions panel showing the exact webhook URL to paste into GitHub and the settings to use.
+
+The task list page gains a new column showing the task key badge for each task, for example `TEST-1`, so developers know what to type in their commit messages.
+
+The task detail page gains a new Development tab sitting next to the existing Discussion tab. When opened it shows a list of all commits linked to that task. Each commit card shows the short commit SHA, the full commit message, the author name, how long ago it was pushed, and a link to view the commit directly on GitHub. A green pulsing dot in the tab label indicates the tab is live. When a new commit arrives in real time it appears at the top of the list instantly with a new badge that fades away after a few seconds. This real time update happens via WebSockets so the user never needs to refresh the page.
