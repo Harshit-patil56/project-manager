@@ -35,6 +35,10 @@ app.use("/api/github/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Health check endpoints for Uptime Monitors (responds to both GET and HEAD)
+app.get(["/health", "/api/health"], (req, res) => res.status(200).send("OK"));
+app.head(["/health", "/api/health"], (req, res) => res.status(200).send());
+
 app.use("/api", router);
 
 export default app;
