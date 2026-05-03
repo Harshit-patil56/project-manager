@@ -1,10 +1,94 @@
-import { useState } from "react";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Calendar as CalendarIcon, ChevronDown, UserCircle2 } from "lucide-react";
 import { useDispatch } from "react-redux";
 import { format } from "date-fns";
 import { createTaskThunk } from "../features/workspaceSlice";
 import toast from "react-hot-toast";
 import { useOrganization } from "@clerk/react";
+
+function AssigneePicker({ teamMembers, value, onChange }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const selected = teamMembers.find((m) => m.id === value) ?? null;
+
+    useEffect(() => {
+        function handleClick(e) {
+            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                type="button"
+                onClick={() => setOpen((o) => !o)}
+                className="w-full flex items-center gap-2 rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-blue-500 text-left"
+            >
+                {selected ? (
+                    <>
+                        <Avatar member={selected} size={5} />
+                        <span className="flex-1 truncate text-zinc-900 dark:text-zinc-200">{selected.name}</span>
+                    </>
+                ) : (
+                    <>
+                        <UserCircle2 className="size-5 text-zinc-400 flex-shrink-0" />
+                        <span className="flex-1 text-zinc-400">Select assignee</span>
+                    </>
+                )}
+                <ChevronDown className="size-4 text-zinc-400 flex-shrink-0" />
+            </button>
+
+            {open && (
+                <ul className="absolute z-50 mt-1 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {teamMembers.map((member) => (
+                        <li key={member.id}>
+                            <button
+                                type="button"
+                                onClick={() => { onChange(member.id); setOpen(false); }}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition text-left ${value === member.id ? "bg-zinc-100 dark:bg-zinc-800" : ""}`}
+                            >
+                                <Avatar member={member} size={6} />
+                                <div className="flex-1 min-w-0">
+                                    <p className="truncate text-zinc-900 dark:text-zinc-100 font-medium">{member.name}</p>
+                                    {member.email && (
+                                        <p className="truncate text-xs text-zinc-400">{member.email}</p>
+                                    )}
+                                </div>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+}
+
+function Avatar({ member, size }) {
+    const [imgError, setImgError] = useState(false);
+    const sizeClass = `size-${size}`;
+    const initials = member.name
+        ? member.name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
+        : "?";
+
+    if (member.imageUrl && !imgError) {
+        return (
+            <img
+                src={member.imageUrl}
+                alt={member.name}
+                className={`${sizeClass} rounded-full object-cover flex-shrink-0`}
+                onError={() => setImgError(true)}
+            />
+        );
+    }
+
+    return (
+        <span className={`${sizeClass} rounded-full flex-shrink-0 bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-semibold text-zinc-700 dark:text-zinc-200`}>
+            {initials}
+        </span>
+    );
+}
 
 export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, projectId }) {
     const dispatch = useDispatch();
@@ -17,6 +101,8 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         return {
             id: m.publicUserData?.userId,
             name: fullName || email || "Unknown",
+            email,
+            imageUrl: m.publicUserData?.imageUrl ?? null,
         };
     });
 
@@ -126,18 +212,11 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Assignee</label>
-                            <select
+                            <AssigneePicker
+                                teamMembers={teamMembers}
                                 value={formData.assigneeId}
-                                onChange={(e) => setFormData({ ...formData, assigneeId: e.target.value })}
-                                className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
-                            >
-                                <option value="">Select assignee</option>
-                                {teamMembers.map((member) => (
-                                    <option key={member.id} value={member.id}>
-                                        {member.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={(id) => setFormData({ ...formData, assigneeId: id })}
+                            />
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium">Status</label>
