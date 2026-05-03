@@ -8,6 +8,7 @@ import tasksRouter from "./tasks";
 import commentsRouter from "./comments";
 import trashRouter from "./trash";
 import githubRouter from "./github";
+import googleRouter from "./google";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(tasksRouter);
 router.use(commentsRouter);
 router.use(trashRouter);
 router.use(githubRouter);
+router.use(googleRouter);
 
 export default router;

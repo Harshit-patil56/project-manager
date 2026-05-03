@@ -17,6 +17,7 @@ import SignUpPage from "./pages/SignUpPage";
 import LandingPage from "./pages/LandingPage";
 import AccountPage from "./pages/AccountPage";
 import Trash from "./pages/Trash";
+import IntegrationsPage from "./pages/IntegrationsPage";
 
 function AuthBridge() {
     const { getToken, isSignedIn, isLoaded } = useAuth();
@@ -97,6 +98,7 @@ const App = () => {
                     <Route path="projectsDetail" element={<ProjectDetails />} />
                     <Route path="taskDetails" element={<TaskDetails />} />
                     <Route path="account" element={<AccountPage />} />
+                    <Route path="integrations" element={<IntegrationsPage />} />
                     <Route path="trash" element={<Trash />} />
                 </Route>
             </Routes>

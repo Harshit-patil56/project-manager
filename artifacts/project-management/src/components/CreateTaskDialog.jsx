@@ -28,6 +28,7 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
         status: "TODO",
         priority: "MEDIUM",
         assigneeId: "",
+        startDate: "",
         dueDate: "",
     });
 
@@ -52,12 +53,13 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                     status: formData.status,
                     priority: formData.priority,
                     assigneeId: formData.assigneeId,
+                    startDate: formData.startDate || undefined,
                     dueDate: formData.dueDate,
                 })
             ).unwrap();
             toast.success("Task created!");
             setShowCreateTask(false);
-            setFormData({ title: "", description: "", type: "TASK", status: "TODO", priority: "MEDIUM", assigneeId: "", dueDate: "" });
+            setFormData({ title: "", description: "", type: "TASK", status: "TODO", priority: "MEDIUM", assigneeId: "", startDate: "", dueDate: "" });
         } catch (err) {
             toast.error(err?.message || "Failed to create task");
         } finally {
@@ -151,23 +153,32 @@ export default function CreateTaskDialog({ showCreateTask, setShowCreateTask, pr
                         </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="text-sm font-medium">Due Date</label>
-                        <div className="flex items-center gap-2">
-                            <CalendarIcon className="size-5 text-zinc-500 dark:text-zinc-400" />
-                            <input
-                                type="date"
-                                value={formData.dueDate}
-                                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                                min={new Date().toISOString().split("T")[0]}
-                                className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
-                            />
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium">Start Date <span className="text-zinc-400 font-normal">(optional)</span></label>
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="size-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                                <input
+                                    type="date"
+                                    value={formData.startDate}
+                                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                                    className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
+                                />
+                            </div>
                         </div>
-                        {formData.dueDate && (
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                {format(new Date(formData.dueDate), "PPP")}
-                            </p>
-                        )}
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium">Due Date</label>
+                            <div className="flex items-center gap-2">
+                                <CalendarIcon className="size-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                                <input
+                                    type="date"
+                                    value={formData.dueDate}
+                                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                                    min={formData.startDate || new Date().toISOString().split("T")[0]}
+                                    className="w-full rounded dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-zinc-900 dark:text-zinc-200 text-sm mt-1"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex justify-end gap-2 pt-2">

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom'
 import MyTasksSidebar from './MyTasksSidebar'
 import ProjectSidebar from './ProjectsSidebar'
 import WorkspaceDropdown from './WorkspaceDropdown'
-import { FolderOpenIcon, LayoutDashboardIcon, UsersIcon, SettingsIcon, Trash2 } from 'lucide-react'
+import { FolderOpenIcon, LayoutDashboardIcon, UsersIcon, SettingsIcon, Trash2, Plug } from 'lucide-react'
 
 const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
@@ -44,6 +44,10 @@ const Sidebar = ({ isSidebarOpen, setIsSidebarOpen }) => {
                                 <p className='text-sm truncate'>{item.name}</p>
                             </NavLink>
                         ))}
+                        <NavLink to="/integrations" className={navLinkClass}>
+                            <Plug size={16} />
+                            <p className='text-sm truncate'>Integrations</p>
+                        </NavLink>
                         <NavLink to="/account" className={navLinkClass}>
                             <SettingsIcon size={16} />
                             <p className='text-sm truncate'>Settings</p>

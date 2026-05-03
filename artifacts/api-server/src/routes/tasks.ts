@@ -10,6 +10,11 @@ import {
 import { eq, and, inArray, isNull } from "drizzle-orm";
 import { authenticate, type AuthedRequest } from "../middleware/auth.js";
 import { randomUUID } from "crypto";
+import {
+  createTaskEvent,
+  updateTaskEvent,
+  deleteTaskEvent,
+} from "../lib/googleCalendar.js";
 
 const router = Router();
 
@@ -58,6 +63,76 @@ async function getWorkspaceMembership(userId: string, workspaceId: string) {
     )
     .limit(1);
   return rows[0] ?? null;
+}
+
+function buildCalendarDescription(
+  projectName: string,
+  type: string,
+  priority: string,
+  status: string,
+  description?: string | null,
+): string {
+  const lines = [
+    `Project: ${projectName}`,
+    `Type: ${type}`,
+    `Priority: ${priority}`,
+    `Status: ${status}`,
+  ];
+  if (description) lines.push(`\n${description}`);
+  return lines.join("\n");
+}
+
+async function syncCalendarEvents(
+  assigneeId: string,
+  taskKey: string,
+  title: string,
+  description: string,
+  startDate: Date | null | undefined,
+  dueDate: Date,
+  existingStartEventId?: string | null,
+  existingDueEventId?: string | null,
+): Promise<{ calendarStartEventId: string | null; calendarDueEventId: string | null }> {
+  const params = { taskKey, title, description };
+
+  // Handle start event
+  let calendarStartEventId: string | null = existingStartEventId ?? null;
+  if (startDate) {
+    if (existingStartEventId) {
+      await updateTaskEvent(assigneeId, existingStartEventId, {
+        ...params,
+        date: startDate,
+        label: "starts",
+      });
+    } else {
+      calendarStartEventId = await createTaskEvent(assigneeId, {
+        ...params,
+        date: startDate,
+        label: "starts",
+      });
+    }
+  } else if (existingStartEventId) {
+    // start date removed — delete the event
+    await deleteTaskEvent(assigneeId, existingStartEventId);
+    calendarStartEventId = null;
+  }
+
+  // Handle due event
+  let calendarDueEventId: string | null = existingDueEventId ?? null;
+  if (existingDueEventId) {
+    await updateTaskEvent(assigneeId, existingDueEventId, {
+      ...params,
+      date: dueDate,
+      label: "due",
+    });
+  } else {
+    calendarDueEventId = await createTaskEvent(assigneeId, {
+      ...params,
+      date: dueDate,
+      label: "due",
+    });
+  }
+
+  return { calendarStartEventId, calendarDueEventId };
 }
 
 router.get(
@@ -154,22 +229,28 @@ router.post(
       return;
     }
 
-    const { title, description, status, type, priority, assigneeId, dueDate } = req.body;
+    const { title, description, status, type, priority, assigneeId, startDate, dueDate } =
+      req.body;
 
     if (!title || !assigneeId || !dueDate) {
       res.status(400).json({ error: "title, assigneeId, and dueDate are required" });
       return;
     }
 
-    // Auto-increment task_number within the project
-    const existingTasks = await db.select({ taskNumber: tasksTable.taskNumber })
+    const existingTasks = await db
+      .select({ taskNumber: tasksTable.taskNumber })
       .from(tasksTable)
       .where(eq(tasksTable.projectId, projectId));
-    const nextNumber = existingTasks.length > 0
-      ? Math.max(...existingTasks.map((t) => t.taskNumber)) + 1
-      : 1;
+    const nextNumber =
+      existingTasks.length > 0
+        ? Math.max(...existingTasks.map((t) => t.taskNumber)) + 1
+        : 1;
 
     const taskId = randomUUID();
+    const parsedDueDate = new Date(dueDate);
+    const parsedStartDate = startDate ? new Date(startDate) : null;
+    const project = projects[0];
+
     await db.insert(tasksTable).values({
       id: taskId,
       projectId,
@@ -180,8 +261,34 @@ router.post(
       type: type ?? "TASK",
       priority: priority ?? "MEDIUM",
       assigneeId,
-      dueDate: new Date(dueDate),
+      startDate: parsedStartDate,
+      dueDate: parsedDueDate,
     });
+
+    // Create calendar events for the assignee (fire-and-forget, non-blocking)
+    const taskKey = `${project.slug.toUpperCase()}-${nextNumber}`;
+    const calDesc = buildCalendarDescription(
+      project.name,
+      type ?? "TASK",
+      priority ?? "MEDIUM",
+      status ?? "TODO",
+      description,
+    );
+    syncCalendarEvents(
+      assigneeId,
+      taskKey,
+      title,
+      calDesc,
+      parsedStartDate,
+      parsedDueDate,
+    ).then(({ calendarStartEventId, calendarDueEventId }) => {
+      if (calendarStartEventId || calendarDueEventId) {
+        db.update(tasksTable)
+          .set({ calendarStartEventId, calendarDueEventId })
+          .where(eq(tasksTable.id, taskId))
+          .catch(() => {});
+      }
+    }).catch(() => {});
 
     const task = await getTaskWithComments(taskId);
     res.status(201).json(task);
@@ -254,11 +361,22 @@ router.patch(
     const isTeamLead = project.teamLead === userId;
 
     if (!isAdmin && !isAssignee && !isTeamLead) {
-      res.status(403).json({ error: "Only the assignee, team lead, or admin can update this task" });
+      res
+        .status(403)
+        .json({ error: "Only the assignee, team lead, or admin can update this task" });
       return;
     }
 
-    const { title, description, status, type, priority, assigneeId, dueDate } = req.body;
+    const {
+      title,
+      description,
+      status,
+      type,
+      priority,
+      assigneeId,
+      startDate,
+      dueDate,
+    } = req.body;
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (title !== undefined) updateData.title = title;
     if (description !== undefined) updateData.description = description;
@@ -266,9 +384,98 @@ router.patch(
     if (type !== undefined) updateData.type = type;
     if (priority !== undefined) updateData.priority = priority;
     if (assigneeId !== undefined) updateData.assigneeId = assigneeId;
+    if (startDate !== undefined)
+      updateData.startDate = startDate ? new Date(startDate) : null;
     if (dueDate !== undefined) updateData.dueDate = new Date(dueDate);
 
     await db.update(tasksTable).set(updateData).where(eq(tasksTable.id, taskId));
+
+    // Sync calendar events if task is not DONE (done = delete events)
+    const newStatus = status ?? task.status;
+    const newAssigneeId = assigneeId ?? task.assigneeId;
+    const newTitle = title ?? task.title;
+    const newDescription = description !== undefined ? description : task.description;
+    const newDueDate = dueDate ? new Date(dueDate) : task.dueDate;
+    const newStartDate =
+      startDate !== undefined
+        ? startDate
+          ? new Date(startDate)
+          : null
+        : task.startDate;
+
+    const calendarRelatedChanged =
+      title !== undefined ||
+      description !== undefined ||
+      assigneeId !== undefined ||
+      startDate !== undefined ||
+      dueDate !== undefined ||
+      status !== undefined;
+
+    if (calendarRelatedChanged) {
+      if (newStatus === "DONE") {
+        // Delete events when task is marked done
+        if (task.calendarStartEventId) {
+          deleteTaskEvent(task.assigneeId, task.calendarStartEventId).catch(() => {});
+        }
+        if (task.calendarDueEventId) {
+          deleteTaskEvent(task.assigneeId, task.calendarDueEventId).catch(() => {});
+        }
+        db.update(tasksTable)
+          .set({ calendarStartEventId: null, calendarDueEventId: null })
+          .where(eq(tasksTable.id, taskId))
+          .catch(() => {});
+      } else {
+        const taskKey = `${project.slug.toUpperCase()}-${task.taskNumber}`;
+        const calDesc = buildCalendarDescription(
+          project.name,
+          type ?? task.type,
+          priority ?? task.priority,
+          newStatus,
+          newDescription,
+        );
+
+        // If assignee changed, delete old events first
+        if (assigneeId && assigneeId !== task.assigneeId) {
+          if (task.calendarStartEventId) {
+            deleteTaskEvent(task.assigneeId, task.calendarStartEventId).catch(() => {});
+          }
+          if (task.calendarDueEventId) {
+            deleteTaskEvent(task.assigneeId, task.calendarDueEventId).catch(() => {});
+          }
+          // Create fresh events for new assignee
+          syncCalendarEvents(
+            newAssigneeId,
+            taskKey,
+            newTitle,
+            calDesc,
+            newStartDate,
+            newDueDate,
+          ).then(({ calendarStartEventId, calendarDueEventId }) => {
+            db.update(tasksTable)
+              .set({ calendarStartEventId, calendarDueEventId })
+              .where(eq(tasksTable.id, taskId))
+              .catch(() => {});
+          }).catch(() => {});
+        } else {
+          // Update existing events
+          syncCalendarEvents(
+            newAssigneeId,
+            taskKey,
+            newTitle,
+            calDesc,
+            newStartDate,
+            newDueDate,
+            task.calendarStartEventId,
+            task.calendarDueEventId,
+          ).then(({ calendarStartEventId, calendarDueEventId }) => {
+            db.update(tasksTable)
+              .set({ calendarStartEventId, calendarDueEventId })
+              .where(eq(tasksTable.id, taskId))
+              .catch(() => {});
+          }).catch(() => {});
+        }
+      }
+    }
 
     const updated = await getTaskWithComments(taskId);
     res.json(updated);
@@ -305,6 +512,14 @@ router.delete(
     if (!membership) {
       res.status(403).json({ error: "Forbidden" });
       return;
+    }
+
+    // Delete calendar events
+    if (task.calendarStartEventId) {
+      deleteTaskEvent(task.assigneeId, task.calendarStartEventId).catch(() => {});
+    }
+    if (task.calendarDueEventId) {
+      deleteTaskEvent(task.assigneeId, task.calendarDueEventId).catch(() => {});
     }
 
     await db.update(tasksTable).set({ deletedAt: new Date() }).where(eq(tasksTable.id, taskId));
