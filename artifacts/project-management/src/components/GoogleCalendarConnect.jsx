@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Calendar, CircleCheck, AlertCircle, Loader2, Unlink } from "lucide-react";
+import { Calendar, CheckCircle2, AlertCircle, Loader2, Unlink } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import toast from "react-hot-toast";
 
@@ -73,8 +73,8 @@ export default function GoogleCalendarConnect() {
                     <div className="flex items-center gap-2 mb-0.5">
                         <h3 className="font-semibold text-zinc-900 dark:text-white text-sm">Google Calendar</h3>
                         {!loading && status?.connected && (
-                            <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                                <CircleCheck className="size-3.5" />
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-emerald-200 text-emerald-800 dark:bg-emerald-500 dark:text-emerald-900">
+                                <CheckCircle2 className="size-3" />
                                 Connected
                             </span>
                         )}
