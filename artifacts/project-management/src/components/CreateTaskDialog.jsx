@@ -37,7 +37,7 @@ function AssigneePicker({ teamMembers, value, onChange }) {
                         <span className="flex-1 text-zinc-400">Select assignee</span>
                     </>
                 )}
-                <ChevronDown className="size-4 text-zinc-400 flex-shrink-0" />
+                <ChevronDown className={`size-4 text-zinc-400 flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"}`} />
             </button>
 
             {open && (
