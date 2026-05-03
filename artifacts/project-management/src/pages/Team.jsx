@@ -2,26 +2,40 @@ import { useEffect, useState } from "react";
 import { UsersIcon, Search, UserPlus, Shield, Activity } from "lucide-react";
 import InviteMemberDialog from "../components/InviteMemberDialog";
 import { useSelector } from "react-redux";
+import { useOrganization } from "@clerk/react";
 
 const Team = () => {
 
     const [tasks, setTasks] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [users, setUsers] = useState([]);
+
     const currentWorkspace = useSelector((state) => state?.workspace?.currentWorkspace || null);
     const projects = currentWorkspace?.projects || [];
 
-    const filteredUsers = users.filter(
-        (user) =>
-            user?.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user?.user?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const { memberships } = useOrganization({ memberships: {} });
+    const clerkMembers = memberships?.data ?? [];
 
     useEffect(() => {
-        setUsers(currentWorkspace?.members || []);
         setTasks(currentWorkspace?.projects?.reduce((acc, project) => [...acc, ...project.tasks], []) || []);
     }, [currentWorkspace]);
+
+    const members = clerkMembers.map((m) => {
+        const firstName = m.publicUserData?.firstName ?? "";
+        const lastName = m.publicUserData?.lastName ?? "";
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+        const email = m.publicUserData?.identifier ?? "";
+        const name = fullName || email || "Unknown";
+        const image = m.publicUserData?.imageUrl ?? "";
+        const role = m.role === "org:admin" ? "ADMIN" : "MEMBER";
+        return { id: m.id, name, email, image, role };
+    });
+
+    const filteredMembers = members.filter(
+        (m) =>
+            m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="space-y-6 max-w-6xl mx-auto">
@@ -41,12 +55,11 @@ const Team = () => {
 
             {/* Stats Cards */}
             <div className="flex flex-wrap gap-4">
-                {/* Total Members */}
                 <div className="max-sm:w-full dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-gray-300 dark:border-zinc-800 rounded-lg p-6">
                     <div className="flex items-center justify-between gap-8 md:gap-22">
                         <div>
                             <p className="text-sm text-gray-500 dark:text-zinc-400">Total Members</p>
-                            <p className="text-xl font-bold text-gray-900 dark:text-white">{users.length}</p>
+                            <p className="text-xl font-bold text-gray-900 dark:text-white">{members.length}</p>
                         </div>
                         <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-500/10">
                             <UsersIcon className="size-4 text-blue-500 dark:text-blue-200" />
@@ -54,7 +67,6 @@ const Team = () => {
                     </div>
                 </div>
 
-                {/* Active Projects */}
                 <div className="max-sm:w-full dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-gray-300 dark:border-zinc-800 rounded-lg p-6">
                     <div className="flex items-center justify-between gap-8 md:gap-22">
                         <div>
@@ -69,7 +81,6 @@ const Team = () => {
                     </div>
                 </div>
 
-                {/* Total Tasks */}
                 <div className="max-sm:w-full dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-gray-300 dark:border-zinc-800 rounded-lg p-6">
                     <div className="flex items-center justify-between gap-8 md:gap-22">
                         <div>
@@ -91,20 +102,16 @@ const Team = () => {
 
             {/* Team Members */}
             <div className="w-full">
-                {filteredUsers.length === 0 ? (
+                {filteredMembers.length === 0 ? (
                     <div className="col-span-full text-center py-16">
                         <div className="w-24 h-24 mx-auto mb-6 bg-gray-200 dark:bg-zinc-800 rounded-full flex items-center justify-center">
                             <UsersIcon className="w-12 h-12 text-gray-400 dark:text-zinc-500" />
                         </div>
                         <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                            {users.length === 0
-                                ? "No team members yet"
-                                : "No members match your search"}
+                            {members.length === 0 ? "No team members yet" : "No members match your search"}
                         </h3>
                         <p className="text-gray-500 dark:text-zinc-400 mb-6">
-                            {users.length === 0
-                                ? "Invite team members to start collaborating"
-                                : "Try adjusting your search term"}
+                            {members.length === 0 ? "Invite team members to start collaborating" : "Try adjusting your search term"}
                         </p>
                     </div>
                 ) : (
@@ -114,44 +121,38 @@ const Team = () => {
                             <table className="min-w-full divide-y divide-gray-200 dark:divide-zinc-800">
                                 <thead className="bg-gray-50 dark:bg-zinc-900/50">
                                     <tr>
-                                        <th className="px-6 py-2.5 text-left font-medium text-sm">
-                                            Name
-                                        </th>
-                                        <th className="px-6 py-2.5 text-left font-medium text-sm">
-                                            Email
-                                        </th>
-                                        <th className="px-6 py-2.5 text-left font-medium text-sm">
-                                            Role
-                                        </th>
+                                        <th className="px-6 py-2.5 text-left font-medium text-sm">Name</th>
+                                        <th className="px-6 py-2.5 text-left font-medium text-sm">Email</th>
+                                        <th className="px-6 py-2.5 text-left font-medium text-sm">Role</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200 dark:divide-zinc-800">
-                                    {filteredUsers.map((user) => (
-                                        <tr
-                                            key={user.id}
-                                            className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors"
-                                        >
+                                    {filteredMembers.map((member) => (
+                                        <tr key={member.id} className="hover:bg-gray-50 dark:hover:bg-zinc-800/50 transition-colors">
                                             <td className="px-6 py-2.5 whitespace-nowrap flex items-center gap-3">
-                                                <img
-                                                    src={user.user.image}
-                                                    alt={user.user.name}
-                                                    className="size-7 rounded-full bg-gray-200 dark:bg-zinc-800"
-                                                />
+                                                {member.image ? (
+                                                    <img
+                                                        src={member.image}
+                                                        alt={member.name}
+                                                        className="size-7 rounded-full bg-gray-200 dark:bg-zinc-800 object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="size-7 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+                                                        {member.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
                                                 <span className="text-sm text-zinc-800 dark:text-white truncate">
-                                                    {user.user?.name || "Unknown User"}
+                                                    {member.name}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-500 dark:text-zinc-400">
-                                                {user.user.email}
+                                                {member.email}
                                             </td>
                                             <td className="px-6 py-2.5 whitespace-nowrap">
-                                                <span
-                                                    className={`px-2 py-1 text-xs rounded-md ${user.role === "ADMIN"
-                                                            ? "bg-purple-100 dark:bg-purple-500/20 text-purple-500 dark:text-purple-400"
-                                                            : "bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300"
-                                                        }`}
-                                                >
-                                                    {user.role || "User"}
+                                                <span className={`px-2 py-1 text-xs rounded-md ${member.role === "ADMIN"
+                                                    ? "bg-purple-100 dark:bg-purple-500/20 text-purple-500 dark:text-purple-400"
+                                                    : "bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300"}`}>
+                                                    {member.role}
                                                 </span>
                                             </td>
                                         </tr>
@@ -162,44 +163,36 @@ const Team = () => {
 
                         {/* Mobile Cards */}
                         <div className="sm:hidden space-y-3">
-                            {filteredUsers.map((user) => (
-                                <div
-                                    key={user.id}
-                                    className="p-4 border border-gray-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-900"
-                                >
+                            {filteredMembers.map((member) => (
+                                <div key={member.id} className="p-4 border border-gray-200 dark:border-zinc-800 rounded-md bg-white dark:bg-zinc-900">
                                     <div className="flex items-center gap-3 mb-2">
-                                        <img
-                                            src={user.user.image}
-                                            alt={user.user.name}
-                                            className="size-9 rounded-full bg-gray-200 dark:bg-zinc-800"
-                                        />
+                                        {member.image ? (
+                                            <img
+                                                src={member.image}
+                                                alt={member.name}
+                                                className="size-9 rounded-full bg-gray-200 dark:bg-zinc-800 object-cover"
+                                            />
+                                        ) : (
+                                            <div className="size-9 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                                                {member.name.charAt(0).toUpperCase()}
+                                            </div>
+                                        )}
                                         <div>
-                                            <p className="font-medium text-gray-900 dark:text-white">
-                                                {user.user?.name || "Unknown User"}
-                                            </p>
-                                            <p className="text-sm text-gray-500 dark:text-zinc-400">
-                                                {user.user.email}
-                                            </p>
+                                            <p className="font-medium text-gray-900 dark:text-white">{member.name}</p>
+                                            <p className="text-sm text-gray-500 dark:text-zinc-400">{member.email}</p>
                                         </div>
                                     </div>
-                                    <div>
-                                        <span
-                                            className={`px-2 py-1 text-xs rounded-md ${user.role === "ADMIN"
-                                                    ? "bg-purple-100 dark:bg-purple-500/20 text-purple-500 dark:text-purple-400"
-                                                    : "bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300"
-                                                }`}
-                                        >
-                                            {user.role || "User"}
-                                        </span>
-                                    </div>
+                                    <span className={`px-2 py-1 text-xs rounded-md ${member.role === "ADMIN"
+                                        ? "bg-purple-100 dark:bg-purple-500/20 text-purple-500 dark:text-purple-400"
+                                        : "bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300"}`}>
+                                        {member.role}
+                                    </span>
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
             </div>
-
-
         </div>
     );
 };
