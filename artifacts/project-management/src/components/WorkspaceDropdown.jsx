@@ -163,7 +163,7 @@ function WorkspaceDropdown() {
                                     onClick={() => { setShowArchiveConfirm(true); setIsOpen(false); }}
                                     className="flex items-center text-xs gap-2 my-1 w-full px-2 py-1.5 rounded text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                                 >
-                                    <Archive className="w-4 h-4" /> Archive Workspace
+                                    <Archive className="w-4 h-4" /> Archive this workspace
                                 </button>
                             )}
                         </div>
