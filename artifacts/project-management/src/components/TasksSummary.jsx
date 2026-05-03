@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { ArrowRight, Clock, AlertTriangle, User } from "lucide-react";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 export default function TasksSummary() {
 
+    const navigate = useNavigate();
     const { currentWorkspace } = useSelector((state) => state.workspace);
     const [tasks, setTasks] = useState([]);
 
@@ -66,7 +68,7 @@ export default function TasksSummary() {
                         ) : (
                             <div className="space-y-3">
                                 {card.items.map((issue) => (
-                                    <div key={issue.id} className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                                    <div key={issue.id} onClick={() => navigate(`/taskDetails?projectId=${issue.projectId}&taskId=${issue.id}`)} className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
                                         <h4 className="text-sm font-medium text-gray-800 dark:text-white truncate">
                                             {issue.title}
                                         </h4>
