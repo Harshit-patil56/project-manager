@@ -84,7 +84,7 @@ export default function ProjectSettings({ project }) {
     }, [project]);
 
     const inputClasses = "w-full px-3 py-2 rounded mt-2 border text-sm dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-300";
-    const cardClasses = "rounded-lg border p-6 bg-white dark:bg-gradient-to-br dark:from-zinc-800/80 dark:to-zinc-800/40 border-zinc-200 dark:border-zinc-700";
+    const cardClasses = "rounded-lg border p-6 not-dark:bg-white dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border-zinc-300 dark:border-zinc-800";
     const labelClasses = "text-sm text-zinc-600 dark:text-zinc-400";
 
     return (
