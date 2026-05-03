@@ -4,14 +4,14 @@ import { useDispatch } from "react-redux";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateTaskThunk, deleteTasksThunk } from "../features/workspaceSlice";
-import { Bug, CalendarIcon, GitCommit, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
+import { Bug, CalendarIcon, Github, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
 import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 const typeIcons = {
     BUG: { icon: Bug, color: "text-red-600 dark:text-red-400" },
     FEATURE: { icon: Zap, color: "text-blue-600 dark:text-blue-400" },
     TASK: { icon: Square, color: "text-green-600 dark:text-green-400" },
-    IMPROVEMENT: { icon: GitCommit, color: "text-purple-600 dark:text-purple-400" },
+    IMPROVEMENT: { icon: Github, color: "text-purple-600 dark:text-purple-400" },
     OTHER: { icon: MessageSquare, color: "text-amber-600 dark:text-amber-400" },
 };
 

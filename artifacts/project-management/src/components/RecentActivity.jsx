@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GitCommit, MessageSquare, Clock, Bug, Zap, Square } from "lucide-react";
+import { Github, MessageSquare, Clock, Bug, Zap, Square } from "lucide-react";
 import { format } from "date-fns";
 import { useSelector } from "react-redux";
 
@@ -8,7 +8,7 @@ const typeIcons = {
     FEATURE: { icon: Zap, color: "text-blue-500 dark:text-blue-400" },
     TASK: { icon: Square, color: "text-green-500 dark:text-green-400" },
     IMPROVEMENT: { icon: MessageSquare, color: "text-amber-500 dark:text-amber-400" },
-    OTHER: { icon: GitCommit, color: "text-purple-500 dark:text-purple-400" },
+    OTHER: { icon: Github, color: "text-purple-500 dark:text-purple-400" },
 };
 
 const statusColors = {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GitCommit, ExternalLink } from "lucide-react";
+import { Github, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { apiFetch } from "../lib/api";
 
@@ -41,7 +41,7 @@ export default function TaskCommits({ taskId }) {
 
     if (commits.length === 0) return (
         <div className="text-center py-10">
-            <GitCommit className="size-8 text-zinc-400 dark:text-zinc-600 mx-auto mb-3" />
+            <Github className="size-8 text-zinc-400 dark:text-zinc-600 mx-auto mb-3" />
             <p className="text-sm text-zinc-500 dark:text-zinc-400">No commits linked yet.</p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
                 Include the task key in a commit message to link it here.
@@ -63,7 +63,7 @@ export default function TaskCommits({ taskId }) {
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 min-w-0">
                             <div className="flex-shrink-0 mt-0.5">
-                                <GitCommit className="size-4 text-zinc-500 dark:text-zinc-400" />
+                                <Github className="size-4 text-zinc-500 dark:text-zinc-400" />
                             </div>
                             <div className="min-w-0">
                                 <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate">

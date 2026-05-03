@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { GitCommit, ExternalLink, Search, LayoutList, Rows3 } from "lucide-react";
+import { Github, ExternalLink, Search, LayoutList, Rows3 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { apiFetch } from "../lib/api";
 
@@ -39,7 +39,7 @@ export default function ProjectDevelopment({ project, tasks }) {
             className="group flex items-start justify-between gap-3 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 cursor-pointer transition-all"
         >
             <div className="flex items-start gap-3 min-w-0">
-                <GitCommit className="size-4 text-zinc-400 dark:text-zinc-500 mt-0.5 flex-shrink-0" />
+                <Github className="size-4 text-zinc-400 dark:text-zinc-500 mt-0.5 flex-shrink-0" />
                 <div className="min-w-0">
                     <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                         {commit.message}
@@ -122,7 +122,7 @@ export default function ProjectDevelopment({ project, tasks }) {
 
     const Empty = () => (
         <div className="text-center py-16">
-            <GitCommit className="size-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
+            <Github className="size-8 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
             <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">No commits found</p>
             <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
                 {commits.length === 0

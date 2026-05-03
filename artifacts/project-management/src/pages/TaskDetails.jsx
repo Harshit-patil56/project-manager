@@ -4,7 +4,7 @@ import { useAuth } from "@clerk/react";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { CalendarIcon, MessageCircle, GitCommit, PenIcon } from "lucide-react";
+import { CalendarIcon, MessageCircle, Github, PenIcon } from "lucide-react";
 import { addCommentThunk } from "../features/workspaceSlice";
 import { apiFetch } from "../lib/api";
 import TaskCommits from "../components/TaskCommits";
@@ -129,7 +129,7 @@ const TaskDetails = () => {
                                     : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                             }`}
                         >
-                            <GitCommit className="size-4" />
+                            <Github className="size-4" />
                             Development
                             {hasNewCommit && (
                                 <span className="relative flex size-2">
@@ -191,7 +191,7 @@ const TaskDetails = () => {
                             <div className="flex-1 overflow-y-auto no-scrollbar">
                                 {taskKey && (
                                     <div className="mb-4 flex items-center gap-2 p-3 rounded-md bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700">
-                                        <GitCommit className="size-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
+                                        <Github className="size-4 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
                                         <p className="text-sm text-zinc-600 dark:text-zinc-400">
                                             Use{" "}
                                             <code className="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-mono text-blue-600 dark:text-blue-400 text-xs">
