@@ -47,9 +47,10 @@ router.get("/trash", authenticate, async (req, res): Promise<void> => {
   const deletedTasks =
     activeProjectIds.length > 0
       ? await db
-          .select({ t: tasksTable, assignee: usersTable })
+          .select({ t: tasksTable, assignee: usersTable, project: projectsTable })
           .from(tasksTable)
           .leftJoin(usersTable, eq(tasksTable.assigneeId, usersTable.id))
+          .leftJoin(projectsTable, eq(tasksTable.projectId, projectsTable.id))
           .where(and(inArray(tasksTable.projectId, activeProjectIds), isNotNull(tasksTable.deletedAt)))
       : [];
 
@@ -67,6 +68,7 @@ router.get("/trash", authenticate, async (req, res): Promise<void> => {
     tasks: deletedTasks.map((r) => ({
       ...r.t,
       assignee: r.assignee ?? null,
+      projectName: r.project?.name ?? null,
     })),
   });
 });

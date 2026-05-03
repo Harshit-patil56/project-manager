@@ -169,7 +169,10 @@ export default function Trash() {
                                         <TrashItem
                                             key={t.id}
                                             name={t.title}
-                                            subtitle={t.assignee?.name ? `Assigned to ${t.assignee.name}` : null}
+                                            subtitle={[
+                                                t.projectName && `In ${t.projectName}`,
+                                                t.assignee?.name && `Assigned to ${t.assignee.name}`,
+                                            ].filter(Boolean).join(" · ") || null}
                                             deletedAt={t.deletedAt}
                                             canRestore={true}
                                             onRestore={() => handleRestoreTask(t.id)}
