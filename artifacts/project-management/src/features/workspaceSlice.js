@@ -118,6 +118,27 @@ export const addCommentThunk = createAsyncThunk(
   }
 );
 
+export const addTaskAssigneeThunk = createAsyncThunk(
+  "workspace/addTaskAssignee",
+  async ({ taskId, projectId, userId }) => {
+    const user = await apiFetch(`/api/tasks/${taskId}/assignees`, {
+      method: "POST",
+      body: JSON.stringify({ userId }),
+    });
+    return { user, taskId, projectId };
+  }
+);
+
+export const removeTaskAssigneeThunk = createAsyncThunk(
+  "workspace/removeTaskAssignee",
+  async ({ taskId, projectId, userId }) => {
+    await apiFetch(`/api/tasks/${taskId}/assignees/${userId}`, {
+      method: "DELETE",
+    });
+    return { userId, taskId, projectId };
+  }
+);
+
 const initialState = {
   workspaces: [],
   currentWorkspace: null,
@@ -322,6 +343,57 @@ const workspaceSlice = createSlice({
         state.workspaces = state.workspaces.map((ws) => ({
           ...ws,
           projects: addComment(ws.projects),
+        }));
+      })
+
+      .addCase(addTaskAssigneeThunk.fulfilled, (state, action) => {
+        const { user, taskId, projectId } = action.payload;
+        const addAssignee = (projects) =>
+          projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  tasks: p.tasks.map((t) =>
+                    t.id === taskId
+                      ? { ...t, extraAssignees: [...(t.extraAssignees || []), user] }
+                      : t
+                  ),
+                }
+              : p
+          );
+        if (state.currentWorkspace) {
+          state.currentWorkspace.projects = addAssignee(state.currentWorkspace.projects);
+        }
+        state.workspaces = state.workspaces.map((ws) => ({
+          ...ws,
+          projects: addAssignee(ws.projects),
+        }));
+      })
+
+      .addCase(removeTaskAssigneeThunk.fulfilled, (state, action) => {
+        const { userId, taskId, projectId } = action.payload;
+        const removeAssignee = (projects) =>
+          projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  tasks: p.tasks.map((t) =>
+                    t.id === taskId
+                      ? {
+                          ...t,
+                          extraAssignees: (t.extraAssignees || []).filter((a) => a.id !== userId),
+                        }
+                      : t
+                  ),
+                }
+              : p
+          );
+        if (state.currentWorkspace) {
+          state.currentWorkspace.projects = removeAssignee(state.currentWorkspace.projects);
+        }
+        state.workspaces = state.workspaces.map((ws) => ({
+          ...ws,
+          projects: removeAssignee(ws.projects),
         }));
       });
   },

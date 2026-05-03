@@ -1,4 +1,4 @@
-import workspace_img_default from "./workspace_img_default.png";
+import workspace_img_default from "./logo.png";
 import profile_img_a from "./profile_img_a.svg";
 import profile_img_o from "./profile_img_o.svg";
 import profile_img_j from "./profile_img_j.svg";

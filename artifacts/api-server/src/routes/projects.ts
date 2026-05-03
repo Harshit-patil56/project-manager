@@ -7,6 +7,7 @@ import {
   usersTable,
   tasksTable,
   commentsTable,
+  taskAssigneesTable,
 } from "@workspace/db/schema";
 import { eq, and, inArray, isNull } from "drizzle-orm";
 import { authenticate, requireWorkspaceMember, type AuthedRequest } from "../middleware/auth.js";
@@ -185,6 +186,22 @@ router.get(
       commentsByTask.set(row.c.taskId, list);
     }
 
+    const allExtraAssignees =
+      taskIds.length > 0
+        ? await db
+            .select({ ta: taskAssigneesTable, user: usersTable })
+            .from(taskAssigneesTable)
+            .innerJoin(usersTable, eq(taskAssigneesTable.userId, usersTable.id))
+            .where(inArray(taskAssigneesTable.taskId, taskIds))
+        : [];
+
+    const extraAssigneesByTask = new Map<string, typeof usersTable.$inferSelect[]>();
+    for (const row of allExtraAssignees) {
+      const list = extraAssigneesByTask.get(row.ta.taskId) ?? [];
+      list.push(row.user);
+      extraAssigneesByTask.set(row.ta.taskId, list);
+    }
+
     res.json({
       ...project,
       members: members.map((r) => ({
@@ -197,6 +214,7 @@ router.get(
       tasks: tasks.map((t) => ({
         ...t,
         assignee: assigneeMap.get(t.assigneeId)!,
+        extraAssignees: extraAssigneesByTask.get(t.id) ?? [],
         comments: (commentsByTask.get(t.id) ?? []).map((r) => ({
           id: r.c.id,
           content: r.c.content,

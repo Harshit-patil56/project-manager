@@ -5,6 +5,9 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { updateTaskThunk, deleteTasksThunk } from "../features/workspaceSlice";
 import { Bug, CalendarIcon, Github, MessageSquare, Square, Trash, XIcon, Zap } from "lucide-react";
+import { motion } from "framer-motion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 const typeIcons = {
@@ -19,6 +22,72 @@ const priorityTexts = {
     LOW: { background: "bg-red-100 dark:bg-red-950", prioritycolor: "text-red-600 dark:text-red-400" },
     MEDIUM: { background: "bg-blue-100 dark:bg-blue-950", prioritycolor: "text-blue-600 dark:text-blue-400" },
     HIGH: { background: "bg-emerald-100 dark:bg-emerald-950", prioritycolor: "text-emerald-600 dark:text-emerald-400" },
+};
+
+const AssigneeGroup = ({ assignees }) => {
+    if (!assignees || assignees.length === 0) return <span className="text-xs text-zinc-500 dark:text-zinc-400">-</span>;
+
+    const visibleAssignees = assignees.slice(0, 4);
+    const remainingCount = assignees.length - 4;
+
+    return (
+        <div onClick={(e) => e.stopPropagation()} className="flex -space-x-2 w-fit px-1 items-center">
+            {visibleAssignees.map((u, i) => (
+                <motion.div
+                    key={u.id || i}
+                    initial="initial"
+                    whileHover="hover"
+                    layout
+                    variants={{
+                        initial: { zIndex: 0 },
+                        hover: { 
+                            zIndex: 50,
+                            scale: 1.05,
+                            y: -2,
+                            transition: { type: "spring", stiffness: 300, damping: 20 }
+                        }
+                    }}
+                    className="relative flex items-center bg-white dark:bg-zinc-950 rounded-full border-2 border-white dark:border-zinc-950 shadow-sm cursor-pointer h-7 overflow-hidden"
+                >
+                    <Avatar className="size-6 shrink-0 border-0">
+                        <AvatarImage src={u.image} alt={u.name} />
+                        <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                            {u.name?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    
+                    <motion.span
+                        variants={{
+                            initial: { width: 0, opacity: 0, marginLeft: 0 },
+                            hover: { 
+                                width: "auto", 
+                                opacity: 1, 
+                                marginLeft: 4,
+                                marginRight: 8,
+                                transition: { type: "spring", stiffness: 300, damping: 20 }
+                            }
+                        }}
+                        className="text-[10px] font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap overflow-hidden"
+                    >
+                        {u.name}
+                    </motion.span>
+                </motion.div>
+            ))}
+            
+            {remainingCount > 0 && (
+                <motion.div 
+                    whileHover={{ scale: 1.1, y: -2, zIndex: 50 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                    <Avatar className="size-6 border-2 border-white dark:border-zinc-950 bg-white dark:bg-zinc-950 shadow-sm">
+                        <AvatarFallback className="text-[10px] bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 font-bold">
+                            +{remainingCount}
+                        </AvatarFallback>
+                    </Avatar>
+                </motion.div>
+            )}
+        </div>
+    );
 };
 
 const ProjectTasks = ({ tasks, projectSlug }) => {
@@ -224,22 +293,7 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                                     </select>
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="flex -space-x-2">
-                                                            {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={task.assignee.name} />}
-                                                            {(task.extraAssignees || []).slice(0, 2).map((u) => (
-                                                                <img key={u.id} src={u.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={u.name} />
-                                                            ))}
-                                                            {task.extraAssignees && task.extraAssignees.length > 2 && (
-                                                                <div className="size-5 rounded-full bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-bold text-zinc-700 dark:text-zinc-200 ring-1 ring-white dark:ring-zinc-900">
-                                                                    +{task.extraAssignees.length - 2}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-xs text-zinc-600 dark:text-zinc-400 min-w-fit">
-                                                            {task.assignee?.name || "-"}
-                                                        </span>
-                                                    </div>
+                                                    <AssigneeGroup assignees={[task.assignee, ...(task.extraAssignees || [])].filter(Boolean)} />
                                                 </td>
                                                 <td className="px-4 py-2">
                                                     <div className="flex items-center gap-1 text-zinc-600 dark:text-zinc-400">
@@ -297,19 +351,9 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                                 <option value="DONE">Done</option>
                                             </select>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
-                                            <div className="flex -space-x-2">
-                                                {task.assignee?.image && <img src={task.assignee.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={task.assignee.name} />}
-                                                {(task.extraAssignees || []).slice(0, 2).map((u) => (
-                                                    <img key={u.id} src={u.image} className="size-5 rounded-full ring-1 ring-white dark:ring-zinc-900" alt="avatar" title={u.name} />
-                                                ))}
-                                                {task.extraAssignees && task.extraAssignees.length > 2 && (
-                                                    <div className="size-5 rounded-full bg-zinc-300 dark:bg-zinc-600 flex items-center justify-center text-[10px] font-bold text-zinc-700 dark:text-zinc-200 ring-1 ring-white dark:ring-zinc-900">
-                                                        +{task.extraAssignees.length - 2}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <span>{task.assignee?.name || "-"}</span>
+                                        <div className="flex flex-col gap-1 text-sm text-zinc-700 dark:text-zinc-300">
+                                            <label className="text-zinc-600 dark:text-zinc-400 text-xs">Assignees</label>
+                                            <AssigneeGroup assignees={[task.assignee, ...(task.extraAssignees || [])].filter(Boolean)} />
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                                             <CalendarIcon className="size-4" />

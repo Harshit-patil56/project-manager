@@ -30,8 +30,13 @@ async function getTaskWithComments(taskId: string) {
   if (tasks.length === 0) return null;
   const task = tasks[0];
 
-  const [assignees, commentRows] = await Promise.all([
+  const [assignees, extraAssigneeRows, commentRows] = await Promise.all([
     db.select().from(usersTable).where(eq(usersTable.id, task.assigneeId)),
+    db
+      .select({ user: usersTable })
+      .from(taskAssigneesTable)
+      .innerJoin(usersTable, eq(taskAssigneesTable.userId, usersTable.id))
+      .where(eq(taskAssigneesTable.taskId, taskId)),
     db
       .select({ c: commentsTable, user: usersTable })
       .from(commentsTable)
@@ -42,6 +47,7 @@ async function getTaskWithComments(taskId: string) {
   return {
     ...task,
     assignee: assignees[0] ?? null,
+    extraAssignees: extraAssigneeRows.map(r => r.user),
     comments: commentRows.map((r) => ({
       id: r.c.id,
       content: r.c.content,

@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CalendarIcon, MessageCircle, Github, PenIcon, TagIcon, ClockIcon, PlusIcon, XIcon, UserCircle2Icon, ChevronDown, AtSignIcon } from "lucide-react";
-import { addCommentThunk } from "../features/workspaceSlice";
+import { addCommentThunk, addTaskAssigneeThunk, removeTaskAssigneeThunk } from "../features/workspaceSlice";
 import { apiFetch } from "../lib/api";
 import TaskCommits from "../components/TaskCommits";
 
@@ -302,16 +302,18 @@ const TaskDetails = () => {
     // Multiple assignees
     const handleAddAssignee = async (memberId) => {
         try {
-            const user = await apiFetch(`/api/tasks/${taskId}/assignees`, { method: "POST", body: JSON.stringify({ userId: memberId }) });
-            setExtraAssignees(prev => [...prev, user]);
+            const result = await dispatch(addTaskAssigneeThunk({ taskId, projectId: task?.projectId || projectId, userId: memberId })).unwrap();
+            setExtraAssignees(prev => [...prev, result.user]);
             setShowAssigneePicker(false);
+            toast.success("Assignee added.");
         } catch (e) { if (!e.message?.includes("409") && !e.message?.includes("Maximum")) toast.error("Failed to add assignee"); else toast.error(e.message); }
     };
 
     const handleRemoveAssignee = async (targetId) => {
         try {
-            await apiFetch(`/api/tasks/${taskId}/assignees/${targetId}`, { method: "DELETE" });
+            await dispatch(removeTaskAssigneeThunk({ taskId, projectId: task?.projectId || projectId, userId: targetId })).unwrap();
             setExtraAssignees(prev => prev.filter(a => a.id !== targetId));
+            toast.success("Assignee removed.");
         } catch { toast.error("Failed to remove assignee"); }
     };
 
