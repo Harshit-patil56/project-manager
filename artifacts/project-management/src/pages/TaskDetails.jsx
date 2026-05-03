@@ -23,6 +23,7 @@ const TaskDetails = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState("discussion");
     const [hasNewCommit, setHasNewCommit] = useState(false);
+    const [commits, setCommits] = useState([]);
 
     const { currentWorkspace } = useSelector((state) => state.workspace);
 
@@ -87,11 +88,23 @@ const TaskDetails = () => {
         }
     }, [taskId, task]);
 
-    // Listen for new commits via SSE to show the pulsing dot on the tab
+    // Fetch commits count for the tab label
+    useEffect(() => {
+        if (!taskId) return;
+        apiFetch(`/api/tasks/${taskId}/commits`)
+            .then((data) => setCommits(data || []))
+            .catch(() => {});
+    }, [taskId]);
+
+    // Listen for new commits via SSE — update count + show pulsing dot
     useEffect(() => {
         if (!taskId) return;
         const es = new EventSource(`/api/tasks/${taskId}/commit-events`);
-        es.onmessage = () => {
+        es.onmessage = (e) => {
+            try {
+                const commit = JSON.parse(e.data);
+                setCommits((prev) => [commit, ...prev]);
+            } catch { /* ignore */ }
             if (activeTab !== "development") setHasNewCommit(true);
         };
         return () => es.close();
@@ -130,7 +143,7 @@ const TaskDetails = () => {
                             }`}
                         >
                             <Github className="size-4" />
-                            Development
+                            Development ({commits.length})
                             {hasNewCommit && (
                                 <span className="relative flex size-2">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
