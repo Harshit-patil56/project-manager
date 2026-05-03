@@ -344,15 +344,20 @@ const TaskDetails = () => {
                                     )}
                                 </div>
 
-                                {/* Comment input with @mention */}
+                                {/* Comment input with @mention styling */}
                                 <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 relative">
                                     <div className="w-full relative">
+                                        {/* Styled text display */}
+                                        <div className="absolute inset-0 dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md p-2 text-sm pointer-events-none overflow-hidden text-gray-900 dark:text-zinc-200">
+                                            {renderCommentWithMentions(newComment || "")}
+                                            {!newComment && <span className="text-gray-400 dark:text-zinc-500">Write a comment… use @ to mention someone</span>}
+                                        </div>
+                                        {/* Transparent input */}
                                         <textarea
                                             ref={commentRef}
                                             value={newComment}
                                             onChange={handleCommentChange}
-                                            placeholder="Write a comment… use @ to mention someone"
-                                            className="w-full dark:bg-zinc-800 border border-gray-300 dark:border-zinc-700 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200 resize-none focus:outline-none focus:ring-1 focus:ring-blue-600"
+                                            className="relative w-full bg-transparent border border-gray-300 dark:border-zinc-700 rounded-md p-2 text-sm text-gray-900 dark:text-zinc-200 resize-none focus:outline-none focus:ring-1 focus:ring-blue-600 placeholder-transparent"
                                             rows={3}
                                         />
                                         {mentionOpen && filteredMentions.length > 0 && (
