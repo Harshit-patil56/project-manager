@@ -20,7 +20,11 @@ const InviteMemberDialog = ({ isDialogOpen, setIsDialogOpen }) => {
         try {
             await apiFetch(`/api/workspaces/${currentWorkspace.id}/invite`, {
                 method: "POST",
-                body: JSON.stringify({ emailAddress: formData.email, role: formData.role }),
+                body: JSON.stringify({ 
+                    emailAddress: formData.email, 
+                    role: formData.role,
+                    redirectUrl: window.location.origin + "/"
+                }),
             });
             toast.success("Invitation sent!");
             setFormData({ email: "", role: "org:member" });

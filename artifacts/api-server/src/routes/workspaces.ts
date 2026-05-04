@@ -173,7 +173,7 @@ router.post(
   requireWorkspaceMember((r) => r.params.workspaceId),
   async (req, res): Promise<void> => {
     const { workspaceId } = req.params;
-    const { emailAddress, role } = req.body;
+    const { emailAddress, role, redirectUrl: bodyRedirectUrl } = req.body;
 
     if (!emailAddress) {
       res.status(400).json({ error: "emailAddress is required" });
@@ -182,13 +182,22 @@ router.post(
 
     try {
       const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-      await clerk.organizations.createOrganizationInvitation({
+      
+      // Clean up redirectUrl: prioritize body, then origin header, then localhost
+      let redirectUrl = bodyRedirectUrl || req.headers.origin || "http://localhost:25075";
+      if (!redirectUrl.endsWith("/")) redirectUrl = `${redirectUrl}/`;
+
+      console.log(`Sending Clerk invitation to ${emailAddress} for org ${workspaceId} with redirectUrl ${redirectUrl}`);
+
+      const invitation = await clerk.organizations.createOrganizationInvitation({
         organizationId: workspaceId,
         emailAddress,
         role: role || "org:member",
         inviterUserId: (req as AuthedRequest).userId,
-        redirectUrl: req.headers.origin ? `${req.headers.origin}/` : "http://localhost:25075/",
+        redirectUrl,
       });
+
+      console.log("Clerk invitation created:", invitation.id);
 
       // Notify the user if they already exist in our database
       const invitedUsers = await db
@@ -209,8 +218,9 @@ router.post(
         });
       }
 
-      res.json({ message: "Invitation sent" });
+      res.json({ message: "Invitation sent", invitation });
     } catch (err: unknown) {
+      console.error("Clerk invitation failed:", err);
       const clerkErr = err as { errors?: { message: string }[]; message?: string };
       res.status(400).json({
         error: clerkErr.errors?.[0]?.message || clerkErr.message || "Failed to send invitation",

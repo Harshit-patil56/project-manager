@@ -34,8 +34,12 @@ const Team = () => {
     const currentWorkspace = useSelector((state) => state?.workspace?.currentWorkspace || null);
     const projects = currentWorkspace?.projects || [];
 
-    const { memberships } = useOrganization({ memberships: {} });
+    const { memberships, invitations } = useOrganization({ 
+        memberships: {},
+        invitations: {}
+    });
     const clerkMembers = memberships?.data ?? [];
+    const pendingInvitations = invitations?.data ?? [];
 
     useEffect(() => {
         setTasks(currentWorkspace?.projects?.reduce((acc, project) => [...acc, ...project.tasks], []) || []);
@@ -232,6 +236,51 @@ const Team = () => {
                     </div>
                 )}
             </div>
+
+            {/* Pending Invitations */}
+            {pendingInvitations.length > 0 && (
+                <div className="space-y-4 max-w-4xl">
+                    <div className="flex items-center gap-2">
+                        <UserPlus className="size-4 text-zinc-500 dark:text-zinc-400" />
+                        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Pending Invitations</h2>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            {pendingInvitations.map((invite) => (
+                                <div key={invite.id} className="px-6 py-3 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/30">
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{invite.emailAddress}</span>
+                                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                                            Invited as {invite.role === "org:admin" ? "Admin" : "Member"}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-medium uppercase tracking-wider">
+                                            Pending
+                                        </span>
+                                        <button 
+                                            onClick={async () => {
+                                                try {
+                                                    await invite.revoke();
+                                                    toast.success("Invitation revoked");
+                                                } catch (err) {
+                                                    toast.error("Failed to revoke invitation");
+                                                }
+                                            }}
+                                            className="text-xs text-red-500 hover:text-red-600 font-medium"
+                                        >
+                                            Revoke
+                                        </button>
+                                        {/* Some versions of Clerk SDK don't have resend() on the invite object directly, 
+                                            but let's try if it exists or just provide the revoke option for now. 
+                                            Actually, resend usually needs to be done via the API again. */}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Workload Section */}
             {openTasks.length > 0 && (
