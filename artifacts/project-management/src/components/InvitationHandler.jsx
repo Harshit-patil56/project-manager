@@ -69,8 +69,15 @@ const InvitationHandler = () => {
                                     await dispatch(fetchWorkspaces()).unwrap();
                                     
                                     // Set active organization in Clerk if setActive is available
-                                    if (setActive) {
-                                        await setActive({ organization: membership.organization.id });
+                                    // Use defensive checks to avoid "Cannot read properties of undefined (reading 'id')"
+                                    const orgId = membership?.organization?.id || inv.organizationId;
+                                    
+                                    if (setActive && orgId) {
+                                        try {
+                                            await setActive({ organization: orgId });
+                                        } catch (setActiveErr) {
+                                            console.warn("Failed to set active organization, but membership was accepted:", setActiveErr);
+                                        }
                                     }
                                     
                                     // Clear Clerk ticket from URL if present
@@ -81,13 +88,22 @@ const InvitationHandler = () => {
                                 } catch (err) {
                                     toast.dismiss(loadingToast);
                                     // If it's already accepted, we can just treat it as success or at least don't show error
-                                    if (err.errors?.[0]?.code === "invitation_already_accepted" || err.message?.includes("pending")) {
+                                    const errorMsg = err instanceof Error ? err.message : String(err);
+                                    const isAlreadyAccepted = 
+                                        (err && typeof err === 'object' && 'errors' in err && Array.isArray(err.errors) && err.errors[0]?.code === "invitation_already_accepted") || 
+                                        errorMsg.includes("pending") || 
+                                        errorMsg.includes("status");
+
+                                    if (isAlreadyAccepted) {
                                         toast.success("You are already a member!");
+                                        // Still try to refresh and set active if we can
+                                        await dispatch(fetchWorkspaces()).unwrap();
+                                        if (setActive && inv.organizationId) {
+                                            await setActive({ organization: inv.organizationId });
+                                        }
                                     } else {
                                         toast.error("Failed to join workspace");
                                         console.error("Invitation acceptance failed:", err);
-                                        // On error, maybe we want to allow retry later? 
-                                        // For now, let's keep it in processed to avoid immediate loop.
                                     }
                                 } finally {
                                     setIsProcessing(false);
