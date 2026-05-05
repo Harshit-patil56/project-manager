@@ -50,14 +50,14 @@ function AuthBridge() {
 function RequireAuth({ children }) {
     const { isSignedIn, isLoaded } = useAuth();
     if (!isLoaded) return null;
-    if (!isSignedIn) return <Navigate to="/sign-in" replace />;
+    if (!isSignedIn) return <Navigate to={`/sign-in${window.location.search}`} replace />;
     return children;
 }
 
 function RedirectIfSignedIn({ children }) {
     const { isSignedIn, isLoaded } = useAuth();
     if (!isLoaded) return null;
-    if (isSignedIn) return <Navigate to="/dashboard" replace />;
+    if (isSignedIn) return <Navigate to={`/dashboard${window.location.search}`} replace />;
     return children;
 }
 

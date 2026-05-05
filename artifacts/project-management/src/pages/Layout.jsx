@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar'
 import { Outlet } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { Loader2Icon } from 'lucide-react'
+import InvitationHandler from '../components/InvitationHandler'
 
 const Layout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -21,6 +22,7 @@ const Layout = () => {
             <div className="flex-1 flex flex-col h-screen">
                 <Navbar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
                 <div className="flex-1 h-full p-6 xl:p-10 xl:px-16 overflow-y-scroll">
+                    <InvitationHandler />
                     <Outlet />
                 </div>
             </div>

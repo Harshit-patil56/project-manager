@@ -185,7 +185,16 @@ router.post(
       
       // Clean up redirectUrl: prioritize body, then origin header, then localhost
       let redirectUrl = bodyRedirectUrl || req.headers.origin || "http://localhost:25075";
-      if (!redirectUrl.endsWith("/")) redirectUrl = `${redirectUrl}/`;
+      
+      try {
+        const url = new URL(redirectUrl);
+        if (url.pathname === "/" || url.pathname === "") {
+          url.pathname = "/dashboard";
+        }
+        redirectUrl = url.toString();
+      } catch (e) {
+        if (!redirectUrl.endsWith("/")) redirectUrl = `${redirectUrl}/`;
+      }
 
       console.log(`Sending Clerk invitation to ${emailAddress} for org ${workspaceId} with redirectUrl ${redirectUrl}`);
 
