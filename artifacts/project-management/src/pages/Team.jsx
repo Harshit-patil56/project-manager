@@ -34,10 +34,16 @@ const Team = () => {
     const currentWorkspace = useSelector((state) => state?.workspace?.currentWorkspace || null);
     const projects = currentWorkspace?.projects || [];
 
-    const { memberships, invitations } = useOrganization({ 
+    const { memberships, organization, membership } = useOrganization({ 
         memberships: {},
-        invitations: {}
     });
+
+    // Only fetch invitations if the user is an admin to avoid 403 Forbidden retry loops
+    const isAdmin = membership?.role === "org:admin";
+    const { invitations } = useOrganization({
+        invitations: isAdmin ? {} : null,
+    });
+
     const clerkMembers = memberships?.data ?? [];
     const pendingInvitations = invitations?.data ?? [];
 
