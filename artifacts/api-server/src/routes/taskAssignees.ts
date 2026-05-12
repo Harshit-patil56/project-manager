@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import {
+  projectMembersTable,
   taskAssigneesTable,
   tasksTable,
   projectsTable,
@@ -69,6 +70,10 @@ router.post("/tasks/:taskId/assignees", authenticate, async (req, res): Promise<
   if (count.length >= 5) { res.status(400).json({ error: "Maximum 5 assignees allowed" }); return; }
 
   await db.insert(taskAssigneesTable).values({ id: randomUUID(), taskId, userId: targetUserId });
+  await db
+    .insert(projectMembersTable)
+    .values({ id: randomUUID(), projectId: task.projectId, userId: targetUserId })
+    .onConflictDoNothing();
 
   const userRows = await db.select().from(usersTable).where(eq(usersTable.id, targetUserId)).limit(1);
   const assignedUser = userRows[0];
