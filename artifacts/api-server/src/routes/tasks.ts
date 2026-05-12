@@ -397,8 +397,29 @@ router.patch(
     const isAdmin = membership.role === "ADMIN";
     const isAssignee = task.assigneeId === userId;
     const isTeamLead = project.teamLead === userId;
+    const canStatusOnlyUpdate =
+      req.body?.status !== undefined &&
+      req.body?.title === undefined &&
+      req.body?.description === undefined &&
+      req.body?.type === undefined &&
+      req.body?.priority === undefined &&
+      req.body?.assigneeId === undefined &&
+      req.body?.startDate === undefined &&
+      req.body?.dueDate === undefined &&
+      req.body?.estimatedMinutes === undefined &&
+      req.body?.loggedMinutes === undefined;
 
-    if (!isAdmin && !isAssignee && !isTeamLead) {
+    let isExtraAssignee = false;
+    if (!isAdmin && !isAssignee && !isTeamLead && canStatusOnlyUpdate) {
+      const extraAssignees = await db
+        .select()
+        .from(taskAssigneesTable)
+        .where(and(eq(taskAssigneesTable.taskId, taskId), eq(taskAssigneesTable.userId, userId)))
+        .limit(1);
+      isExtraAssignee = extraAssignees.length > 0;
+    }
+
+    if (!isAdmin && !isAssignee && !isTeamLead && !isExtraAssignee) {
       res
         .status(403)
         .json({ error: "Only the assignee, team lead, or admin can update this task" });
