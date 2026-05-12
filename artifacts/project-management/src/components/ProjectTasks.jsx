@@ -321,12 +321,17 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                 const { icon: Icon, color } = typeIcons[task.type] || {};
                                 const { background, prioritycolor } = priorityTexts[task.priority] || {};
                                 return (
-                                    <div key={task.id} className="dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2">
+                                    <div
+                                        key={task.id}
+                                        onClick={() => navigate(`/taskDetails?projectId=${task.projectId}&taskId=${task.id}`)}
+                                        className="dark:bg-gradient-to-br dark:from-zinc-800/70 dark:to-zinc-900/50 border border-zinc-300 dark:border-zinc-800 rounded-lg p-4 flex flex-col gap-2"
+                                    >
                                         <div className="flex items-center justify-between">
                                             <h3 className="text-zinc-900 dark:text-zinc-200 text-sm font-semibold">{task.title}</h3>
                                             <input
                                                 type="checkbox"
                                                 className="size-4 accent-zinc-600 dark:accent-zinc-500"
+                                                onClick={(e) => e.stopPropagation()}
                                                 onChange={() => selectedTasks.includes(task.id) ? setSelectedTasks(selectedTasks.filter((i) => i !== task.id)) : setSelectedTasks((prev) => [...prev, task.id])}
                                                 checked={selectedTasks.includes(task.id)}
                                             />
@@ -338,7 +343,7 @@ const ProjectTasks = ({ tasks, projectSlug }) => {
                                         <div>
                                             <span className={`text-xs px-2 py-1 rounded ${background} ${prioritycolor}`}>{task.priority}</span>
                                         </div>
-                                        <div>
+                                        <div onClick={(e) => e.stopPropagation()}>
                                             <label className="text-zinc-600 dark:text-zinc-400 text-xs">Status</label>
                                             <select
                                                 name="status"
